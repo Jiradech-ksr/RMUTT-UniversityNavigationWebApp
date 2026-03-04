@@ -1,5 +1,9 @@
 <?php
 session_start();
+if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
+    header("Location: login.php");
+    exit();
+}
 include '../api/db_connect.php'; // เรียกใช้การเชื่อมต่อ DB ตัวเดียวกับแอป
 
 // กำหนดหน้าปัจจุบันเพื่อทำ Active Menu
@@ -18,14 +22,12 @@ $current_page = basename($_SERVER['PHP_SELF']);
 </head>
 
 <body>
-
     <div class="d-flex">
         <nav id="sidebar">
             <div class="sidebar-header text-center">
                 <h4><i class="fas fa-map-marked-alt text-warning"></i> Campus Nav</h4>
                 <small>Admin Console</small>
             </div>
-
             <ul class="list-unstyled components">
                 <li class="<?= ($current_page == 'index.php') ? 'active' : ''; ?>">
                     <a href="index.php"><i class="fas fa-home"></i> แดชบอร์ด (Dashboard)</a>
@@ -36,23 +38,30 @@ $current_page = basename($_SERVER['PHP_SELF']);
                 <li class="<?= ($current_page == 'manage_users.php') ? 'active' : ''; ?>">
                     <a href="manage_users.php"><i class="fas fa-user-graduate"></i> จัดการนักศึกษา</a>
                 </li>
-                <li class="<?= ($current_page == 'manage_staff.php') ? 'active' : ''; ?>">
-                    <a href="manage_staff.php"><i class="fas fa-user-tie"></i> จัดการเจ้าหน้าที่</a>
-                </li>
                 <li class="<?= ($current_page == 'reports.php') ? 'active' : ''; ?>">
                     <a href="reports.php"><i class="fas fa-exclamation-triangle"></i> ข้อเสนอแนะ/รายงาน</a>
                 </li>
             </ul>
         </nav>
-
         <div id="content" class="w-100 bg-light">
             <nav class="navbar navbar-expand-lg navbar-light top-navbar px-4 py-3 mb-4">
                 <div class="container-fluid">
-                    <span class="navbar-brand mb-0 h1 fw-bold text-indigo">RMUTT Navigation System</span>
+                    <span class="navbar-brand mb-0 h1 fw-bold text-indigo">RMUTT Navigator System</span>
                     <div class="d-flex align-items-center">
-                        <span class="me-3"><i class="fas fa-user-circle fs-4 text-secondary"></i> Administrator</span>
+                        <?php
+                        $default_avatar = "https://ui-avatars.com/api/?name=" . urlencode($_SESSION['admin_name']) . "&background=1A237E&color=fff&rounded=true";
+                        $display_photo = !empty($_SESSION['admin_photo']) ? $_SESSION['admin_photo'] : $default_avatar;
+                        ?>
+                        <img src="<?= $display_photo ?>" alt="Profile" class="rounded-circle me-2 border shadow-sm"
+                            width="35" height="35" onerror="this.onerror=null; this.src='<?= $default_avatar ?>';">
+                        <div class="d-flex flex-column lh-1">
+                            <span class="fw-bold"><?= htmlspecialchars($_SESSION['admin_name']) ?></span>
+                            <small class="text-muted text-uppercase"
+                                style="font-size: 0.7rem;"><?= htmlspecialchars($_SESSION['admin_role']) ?></small>
+                        </div>
+                        <a href="logout.php" class="btn btn-sm btn-outline-danger ms-4" title="ออกจากระบบ"><i
+                                class="fas fa-sign-out-alt"></i></a>
                     </div>
                 </div>
             </nav>
-
             <div class="container-fluid px-4">

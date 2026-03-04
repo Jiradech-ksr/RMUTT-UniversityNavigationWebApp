@@ -1,6 +1,5 @@
 <?php
-// htdocs/admin/dashboard.php
-include 'includes/header.php'; // <--- LOADS NAV & CSS
+include 'includes/header.php';
 ?>
 
 <div class="row">
@@ -35,5 +34,4 @@ include 'includes/header.php'; // <--- LOADS NAV & CSS
 </div>
 
 <?php
-include 'includes/footer.php'; // <--- CLOSES HTML
-?>
+include 'includes/footer.php';

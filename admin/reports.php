@@ -50,7 +50,7 @@ $reports = $conn->query($sql);
                                 </td>
                                 <td>
                                     <?php if ($rp['room_name']): ?>
-                                        <span class="fw-bold text-primary">
+                                        <span class="fw-semi bold text-primary">
                                             <?= htmlspecialchars($rp['room_name']); ?> (
                                             <?= htmlspecialchars($rp['room_number']); ?>)
                                         </span><br>

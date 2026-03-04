@@ -76,8 +76,8 @@ $buildings = $conn->query("SELECT * FROM buildings ORDER BY name ASC");
             ?>
             <div class="accordion-item border-0 border-bottom mb-1 rounded">
                 <h2 class="accordion-header" id="heading<?= $b_id; ?>">
-                    <button class="accordion-button collapsed fw-bold text-indigo" style="background-color: #f8f9fc;"
-                        type="button" data-bs-toggle="collapse" data-bs-target="#collapse<?= $b_id; ?>">
+                    <button class="accordion-button collapsed text-indigo" style="background-color: #f8f9fc;" type="button"
+                        data-bs-toggle="collapse" data-bs-target="#collapse<?= $b_id; ?>">
                         <i class="fas fa-map-marker-alt me-2 text-danger"></i> <?= $b_name; ?>
                         <span class="badge bg-secondary ms-3"><?= $rooms->num_rows; ?> ห้อง</span>
                     </button>
@@ -108,7 +108,7 @@ $buildings = $conn->query("SELECT * FROM buildings ORDER BY name ASC");
                                 <tbody>
                                     <?php while ($r = $rooms->fetch_assoc()): ?>
                                         <tr>
-                                            <td class="px-3 fw-bold text-primary"><?= htmlspecialchars($r['room_number']); ?></td>
+                                            <td class="px-3 text-primary"><?= htmlspecialchars($r['room_number']); ?></td>
                                             <td><?= htmlspecialchars($r['name']); ?></td>
                                             <td>ชั้น <?= htmlspecialchars($r['floor']); ?></td>
                                             <td class="text-end px-3">
@@ -152,7 +152,7 @@ $buildings = $conn->query("SELECT * FROM buildings ORDER BY name ASC");
                             placeholder="เช่น ตึกวิศวกรรมคอมพิวเตอร์">
                     </div>
 
-                    <label class="form-label fw-bold">ระบุพิกัดตำแหน่งอาคาร (คลิกบนแผนที่)</label>
+                    <label class="form-label">ระบุพิกัดตำแหน่งอาคาร (คลิกบนแผนที่)</label>
                     <div id="mapPicker"
                         style="height: 350px; width: 100%; border: 1px solid #ccc; border-radius: 4px; margin-bottom: 10px; background-color: #f8f9fa;">
                     </div>

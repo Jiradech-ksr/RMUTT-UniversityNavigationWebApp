@@ -131,7 +131,7 @@ $student_query = $conn->query("SELECT * FROM users WHERE role = 'student' ORDER 
                                                 style="width:40px;height:40px;"><i class="fas fa-user"></i></div>
                                         <?php endif; ?>
                                         <div>
-                                            <div class="fw-bold"><?= htmlspecialchars($u['display_name']); ?></div>
+                                            <div class="fw-Semi Bold"><?= htmlspecialchars($u['display_name']); ?></div>
                                             <small class="text-muted"><?= htmlspecialchars($u['email']); ?></small>
                                         </div>
                                     </div>
@@ -201,7 +201,7 @@ $student_query = $conn->query("SELECT * FROM users WHERE role = 'student' ORDER 
                                                 style="width:40px;height:40px;"><i class="fas fa-user"></i></div>
                                         <?php endif; ?>
                                         <div>
-                                            <div class="fw-bold"><?= htmlspecialchars($u['display_name']); ?></div>
+                                            <div class="fw-Semi Bold"><?= htmlspecialchars($u['display_name']); ?></div>
                                             <small class="text-muted"><?= htmlspecialchars($u['email']); ?></small>
                                         </div>
                                     </div>

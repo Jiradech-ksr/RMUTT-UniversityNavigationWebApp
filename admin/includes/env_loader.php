@@ -25,4 +25,4 @@ function loadEnv($path)
 }
 
 // เรียกใช้งานโดยระบุตำแหน่งไฟล์ .env
-loadEnv(__DIR__ . '/../.env');
+loadEnv(__DIR__ . '/../../.env');
