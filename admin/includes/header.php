@@ -36,7 +36,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
                     <a href="manage_rooms.php"><i class="fas fa-building"></i> จัดการอาคาร/ห้อง</a>
                 </li>
                 <li class="<?= ($current_page == 'manage_users.php') ? 'active' : ''; ?>">
-                    <a href="manage_users.php"><i class="fas fa-user-graduate"></i> จัดการนักศึกษา</a>
+                    <a href="manage_users.php"><i class="fas fa-user-graduate"></i> จัดการบัญชีผู้ใช้งาน</a>
                 </li>
                 <li class="<?= ($current_page == 'reports.php') ? 'active' : ''; ?>">
                     <a href="reports.php"><i class="fas fa-exclamation-triangle"></i> ข้อเสนอแนะ/รายงาน</a>

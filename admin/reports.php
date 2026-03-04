@@ -1,10 +1,11 @@
 <?php
 include 'includes/header.php';
 
-// จัดการอัปเดตสถานะเป็น "แก้ไขแล้ว"
+// จัดการอัปเดตสถานะเป็น "แก้ไขแล้ว" พร้อมบันทึกเวลาปัจจุบัน (NOW)
 if (isset($_GET['resolve_id'])) {
     $id = (int) $_GET['resolve_id'];
-    $conn->query("UPDATE reports SET status = 'resolved' WHERE id = $id");
+    // เพิ่มการอัปเดตคอลัมน์ resolved_at = NOW()
+    $conn->query("UPDATE reports SET status = 'resolved', resolved_at = NOW() WHERE id = $id");
     echo "<script>window.location='reports.php';</script>";
 }
 
@@ -43,16 +44,17 @@ $reports = $conn->query($sql);
                         while ($rp = $reports->fetch_assoc()): ?>
                             <tr>
                                 <td class="px-4">
-                                    <?= date("d/m/Y H:i", strtotime($rp['created_at'])); ?>
+                                    <div class="fw-bold text-dark"><?= date("d/m/Y", strtotime($rp['created_at'])); ?></div>
+                                    <small class="text-muted"><?= date("H:i", strtotime($rp['created_at'])); ?> น.</small>
                                 </td>
                                 <td>
                                     <?= htmlspecialchars($rp['display_name']); ?>
                                 </td>
                                 <td>
                                     <?php if ($rp['room_name']): ?>
-                                        <span class="fw-semi bold text-primary">
-                                            <?= htmlspecialchars($rp['room_name']); ?> (
-                                            <?= htmlspecialchars($rp['room_number']); ?>)
+                                        <span class="fw-bold text-primary">
+                                            <?= htmlspecialchars($rp['room_name']); ?>
+                                            (<?= htmlspecialchars($rp['room_number']); ?>)
                                         </span><br>
                                         <small class="text-muted">
                                             <?= htmlspecialchars($rp['building_name']); ?>
@@ -82,16 +84,25 @@ $reports = $conn->query($sql);
                                         <span class="badge bg-warning text-dark"><i class="fas fa-clock"></i> รอดำเนินการ</span>
                                     <?php else: ?>
                                         <span class="badge bg-success"><i class="fas fa-check-circle"></i> แก้ไขแล้ว</span>
+                                        <?php if (!empty($rp['resolved_at'])): ?>
+                                            <div class="mt-1">
+                                                <small class="text-muted" style="font-size: 0.75rem;">
+                                                    <i class="fas fa-check-double"></i> เมื่อ:
+                                                    <?= date("d/m/y H:i", strtotime($rp['resolved_at'])); ?>
+                                                </small>
+                                            </div>
+                                        <?php endif; ?>
                                     <?php endif; ?>
                                 </td>
                                 <td class="text-end px-4">
                                     <?php if ($rp['status'] == 'pending'): ?>
-                                        <a href="?resolve_id=<?= $rp['id']; ?>" class="btn btn-sm btn-success"
+                                        <a href="?resolve_id=<?= $rp['id']; ?>" class="btn btn-sm btn-success shadow-sm"
                                             onclick="return confirm('ยืนยันว่าปัญหาถูกแก้ไขเรียบร้อยแล้ว?');">
-                                            ทำเครื่องหมายว่าแก้ไขแล้ว
+                                            <i class="fas fa-wrench me-1"></i> ทำเครื่องหมายว่าแก้ไขแล้ว
                                         </a>
                                     <?php else: ?>
-                                        <button class="btn btn-sm btn-secondary" disabled>เสร็จสิ้น</button>
+                                        <button class="btn btn-sm btn-light border text-muted" disabled><i class="fas fa-check"></i>
+                                            เสร็จสิ้น</button>
                                     <?php endif; ?>
                                 </td>
                             </tr>
