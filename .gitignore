@@ -1,0 +1,41 @@
+# --- Security & Credentials ---
+# ห้าม Push ไฟล์ที่เก็บความลับเข้า Git โดยเด็ดขาด
+.env
+config.php
+credentials.json
+*.key
+*.pem
+
+# --- Database & Logs ---
+# ข้อมูลจำลอง หรือไฟล์สำรองฐานข้อมูล
+*.sql
+*.sqlite
+error_log
+access_log
+*.log
+.env
+
+# --- OS Generated Files ---
+# ไฟล์ขยะจากระบบปฏิบัติการ
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# --- Development Tools ---
+# โฟลเดอร์จาก Editor ต่างๆ
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# --- PHP Specific ---
+# หากมีการใช้ Composer ในอนาคต
+/vendor/
+composer.phar
+
+# --- Uploads & Temporary Files ---
+# หากในระบบมีการให้ User อัปโหลดรูปภาพ (ป้องกันการ Push รูปเล่นๆ ขึ้น Cloud)
+uploads/
+temp/
+tmp/

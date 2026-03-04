@@ -1,0 +1,14 @@
+# 1. ป้องกันการเข้าถึงไฟล์ .env
+<Files .env>
+    Order allow,deny
+    Deny from all
+</Files>
+
+# 2. ป้องกันการเข้าถึงไฟล์ .htaccess เอง
+<Files .htaccess>
+    Order allow,deny
+    Deny from all
+</Files>
+
+# 3. (เพิ่มเติม) ป้องกันการเข้าถึงไฟล์ .php ในโฟลเดอร์ includes โดยตรง
+# สร้างไฟล์ .htaccess อีกใบไว้ในโฟลเดอร์ includes แล้วใส่โค้ดข้างล่างนี้
