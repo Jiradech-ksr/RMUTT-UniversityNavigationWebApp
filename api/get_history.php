@@ -1,6 +1,5 @@
 <?php
-error_reporting(E_ALL);
-ini_set('display_errors', 0);
+error_reporting(0); // Keep 0 to prevent JSON crashes
 
 header("Access-Control-Allow-Origin: *");
 header("Content-Type: application/json; charset=UTF-8");
@@ -19,18 +18,22 @@ function makeFullUrl($dbPath)
     $host = $_SERVER['HTTP_HOST'];
     return $protocol . "://" . $host . "/" . ltrim($dbPath, '/');
 }
-$email = $_GET['email'] ?? '';
+
+// FIX: Trim spaces just in case Flutter sends "email@gmail.com "
+$email = trim($_GET['email'] ?? '');
 
 // 1. Check User
 $userQ = $conn->prepare("SELECT id FROM users WHERE email = ?");
 $userQ->bind_param("s", $email);
 $userQ->execute();
-if ($userQ->get_result()->num_rows == 0) {
+$userResult = $userQ->get_result();
+
+if ($userResult->num_rows == 0) {
     echo json_encode([]);
     exit();
 }
 
-// 2. Fetch History (Join with Rooms and Buildings)
+// 2. Fetch History 
 $sql = "SELECT h.id as history_id, h.visited_at, 
                r.id, r.name, r.room_number, r.floor, r.image_url, 
                r.floor_layout_url, 
@@ -50,11 +53,14 @@ $result = $stmt->get_result();
 
 $history = array();
 while ($row = $result->fetch_assoc()) {
-    // Process Images
+    // Process Images cleanly
     $row['image_url'] = makeFullUrl($row['image_url']);
     $row['floor_layout_url'] = makeFullUrl($row['floor_layout_url']);
 
-    // ... rest of your loop code ...
+    // Ensure room_number is explicitly cast to a string for Flutter
+    $row['room_number'] = (string) $row['room_number'];
+
+    array_push($history, $row);
 }
 
 echo json_encode($history);
