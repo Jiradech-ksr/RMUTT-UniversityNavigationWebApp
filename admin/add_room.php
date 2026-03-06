@@ -3,7 +3,7 @@ include '../api/db_connect.php';
 
 // --- CONFIGURATION ---
 // Change this to your computer's IP address
-$base_url = "http://192.168.100.35";
+$base_url = "http://[IP_ADDRESS]";
 $message = "";
 
 // 1. FETCH BUILDINGS FOR DROPDOWN
@@ -38,9 +38,11 @@ function uploadFile($fileInputName, $subFolder, $base_url)
     // Simple check: is it an image?
     $check = getimagesize($_FILES[$fileInputName]["tmp_name"]);
     if ($check !== false) {
-        if (move_uploaded_file($_FILES[$fileInputName]["tmp_name"], $target_file)) {
-            // Return the full URL for the database
-            return $base_url . "/uploads/" . $subFolder . "/" . $filename;
+        if (!file_exists($target_file)) {
+            if (move_uploaded_file($_FILES[$fileInputName]["tmp_name"], $target_file)) {
+                // Return the full URL for the database
+                return "/uploads/" . $subFolder . "/" . $filename;
+            }
         }
     }
     return null; // Upload failed

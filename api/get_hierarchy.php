@@ -1,28 +1,29 @@
 <?php
 // 1. TURN ERRORS ON (So you can see if something crashes)
 error_reporting(E_ALL);
-ini_set('display_errors', 1);
+ini_set('display_errors', 0);
 
 header("Access-Control-Allow-Origin: *");
 header("Content-Type: application/json; charset=UTF-8");
-
+require_once 'upload_helper.php';
 include 'db_connect.php';
 
 // --- HELPER: Dynamic URL ---
-function makeUrlDynamic($dbUrl)
+function makeFullUrl($dbPath)
 {
-    if (empty($dbUrl))
+    if (empty($dbPath))
         return null;
 
-    // Ensure we are running on a server that has these variables
-    if (!isset($_SERVER['HTTP_HOST']))
-        return $dbUrl;
+    // Fallback: If the path already has 'http' from your old test data, just return it
+    if (strpos($dbPath, 'http') === 0) {
+        return $dbPath;
+    }
 
+    // Otherwise, build the full URL dynamically based on the current server
     $protocol = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? "https" : "http";
-    $currentHost = $_SERVER['HTTP_HOST'];
+    $host = $_SERVER['HTTP_HOST']; // Grabs localhost, 192.168.x.x, or your production domain
 
-    // Replace the old IP/Domain with the current one
-    return preg_replace('#^http(s)?://[^/]+#', "$protocol://$currentHost", $dbUrl);
+    return $protocol . "://" . $host . "/" . ltrim($dbPath, '/');
 }
 
 $hierarchy = [];
@@ -48,7 +49,7 @@ if ($result_buildings->num_rows > 0) {
             "type" => "building",
             "lat" => $building['latitude'],
             "lng" => $building['longitude'],
-            "image_url" => makeUrlDynamic($b_img),
+            "image_url" => makeFullUrl($b_img),
             "children" => []
         ];
 
@@ -71,8 +72,8 @@ if ($result_buildings->num_rows > 0) {
                     "type" => "room",
                     "lat" => $building['latitude'],
                     "lng" => $building['longitude'],
-                    "image_url" => makeUrlDynamic($r_img),
-                    "floor_layout_url" => makeUrlDynamic($r_layout)
+                    "image_url" => makeFullUrl($r_img),
+                    "floor_layout_url" => makeFullUrl($r_layout)
                 ];
                 array_push($buildingNode['children'], $roomNode);
             }

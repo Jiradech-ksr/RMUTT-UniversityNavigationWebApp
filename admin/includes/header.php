@@ -25,12 +25,12 @@ $current_page = basename($_SERVER['PHP_SELF']);
     <div class="d-flex">
         <nav id="sidebar">
             <div class="sidebar-header text-center">
-                <h4><i class="fas fa-map-marked-alt text-warning"></i> Campus Nav</h4>
+                <h4><i class="fas fa-map-marked-alt text-warning"></i> RMUTT Navigation System</h4>
                 <small>Admin Console</small>
             </div>
             <ul class="list-unstyled components">
                 <li class="<?= ($current_page == 'index.php') ? 'active' : ''; ?>">
-                    <a href="index.php"><i class="fas fa-home"></i> แดชบอร์ด (Dashboard)</a>
+                    <a href="index.php"><i class="fas fa-home"></i>ภาพรวมระบบ</a>
                 </li>
                 <li class="<?= ($current_page == 'manage_rooms.php') ? 'active' : ''; ?>">
                     <a href="manage_rooms.php"><i class="fas fa-building"></i> จัดการอาคาร/ห้อง</a>

@@ -1,6 +1,6 @@
 <?php
 error_reporting(E_ALL);
-ini_set('display_errors', 1); // Debug mode
+ini_set('display_errors', 0);
 
 header("Access-Control-Allow-Origin: *");
 header("Content-Type: application/json; charset=UTF-8");
@@ -8,17 +8,17 @@ header("Content-Type: application/json; charset=UTF-8");
 include 'db_connect.php';
 
 // --- Helper for Dynamic IP ---
-function makeUrlDynamic($dbUrl)
+function makeFullUrl($dbPath)
 {
-    if (empty($dbUrl))
+    if (empty($dbPath))
         return null;
-    if (!isset($_SERVER['HTTP_HOST']))
-        return $dbUrl;
-    $protocol = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? "https" : "http";
-    $currentHost = $_SERVER['HTTP_HOST'];
-    return preg_replace('#^http(s)?://[^/]+#', "$protocol://$currentHost", $dbUrl);
-}
+    if (strpos($dbPath, 'http') === 0)
+        return $dbPath; // Fallback for old data
 
+    $protocol = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? "https" : "http";
+    $host = $_SERVER['HTTP_HOST'];
+    return $protocol . "://" . $host . "/" . ltrim($dbPath, '/');
+}
 $email = $_GET['email'] ?? '';
 
 // 1. Check User
@@ -51,15 +51,10 @@ $result = $stmt->get_result();
 $history = array();
 while ($row = $result->fetch_assoc()) {
     // Process Images
-    $row['image_url'] = makeUrlDynamic($row['image_url']);
-    $row['floor_layout_url'] = makeUrlDynamic($row['floor_layout_url']);
+    $row['image_url'] = makeFullUrl($row['image_url']);
+    $row['floor_layout_url'] = makeFullUrl($row['floor_layout_url']);
 
-    // Ensure Department Name is set
-    if (empty($row['department_name'])) {
-        $row['department_name'] = "Unknown Building";
-    }
-
-    $history[] = $row;
+    // ... rest of your loop code ...
 }
 
 echo json_encode($history);

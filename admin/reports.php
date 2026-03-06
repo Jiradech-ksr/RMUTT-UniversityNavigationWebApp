@@ -44,7 +44,8 @@ $reports = $conn->query($sql);
                         while ($rp = $reports->fetch_assoc()): ?>
                             <tr>
                                 <td class="px-4">
-                                    <div class="fw-bold text-dark"><?= date("d/m/Y", strtotime($rp['created_at'])); ?></div>
+                                    <div class="fw-semi bold text-dark"><?= date("d/m/Y", strtotime($rp['created_at'])); ?>
+                                    </div>
                                     <small class="text-muted"><?= date("H:i", strtotime($rp['created_at'])); ?> น.</small>
                                 </td>
                                 <td>
@@ -52,7 +53,7 @@ $reports = $conn->query($sql);
                                 </td>
                                 <td>
                                     <?php if ($rp['room_name']): ?>
-                                        <span class="fw-bold text-primary">
+                                        <span class="fw-semi bold text-primary">
                                             <?= htmlspecialchars($rp['room_name']); ?>
                                             (<?= htmlspecialchars($rp['room_number']); ?>)
                                         </span><br>
@@ -70,10 +71,12 @@ $reports = $conn->query($sql);
                                     <?= htmlspecialchars($rp['description']); ?>
                                 </td>
                                 <td>
-                                    <?php if (!empty($rp['image_url'])): ?>
-                                        <a href="<?= htmlspecialchars($rp['image_url']); ?>" target="_blank">
-                                            <img src="<?= htmlspecialchars($rp['image_url']); ?>" alt="evidence" width="50"
-                                                height="50" class="rounded border" style="object-fit:cover;">
+                                    <?php if (!empty($rp['image_url'])):
+                                        $img_path = (strpos($rp['image_url'], 'http') === 0) ? $rp['image_url'] : '../' . ltrim($rp['image_url'], '/');
+                                        ?>
+                                        <a href="<?= htmlspecialchars($img_path); ?>" target="_blank">
+                                            <img src="<?= htmlspecialchars($img_path); ?>" alt="evidence" width="50" height="50"
+                                                class="rounded border" style="object-fit:cover;">
                                         </a>
                                     <?php else: ?>
                                         -
