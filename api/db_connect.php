@@ -2,7 +2,7 @@
 $servername = "localhost";
 $username = "root";
 $password = "";
-$dbname = "campus_nav";
+$dbname = "universitynavigation_db";
 
 $conn = new mysqli($servername, $username, $password, $dbname);
 
