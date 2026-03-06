@@ -63,7 +63,7 @@ $chart_data_doughnut = ($pending_reports == 0 && $resolved_reports == 0) ? [1, 0
 // --- 4. ดึงข้อมูลห้องที่ถูกค้นหาสูงสุด ---
 $popular_rooms_sql = "SELECT rm.name, rm.room_number, b.name as building_name, COUNT(*) as visits 
                       FROM history h 
-                      JOIN rooms rm ON h.room_id = rm.id 
+                      JOIN rooms rm ON h.location_id = rm.id AND h.location_type = 'Room'
                       JOIN buildings b ON rm.building_id = b.id
                       GROUP BY rm.id ORDER BY visits DESC LIMIT 10";
 $popular_rooms_result = $conn->query($popular_rooms_sql);

@@ -1,40 +1,29 @@
 <?php
 error_reporting(E_ALL);
-ini_set('display_errors', 0); // Debug mode
-
+ini_set('display_errors', 0);
 header("Access-Control-Allow-Origin: *");
 header("Content-Type: application/json; charset=UTF-8");
-
 include 'db_connect.php';
 
 $email = $_POST['email'] ?? '';
-$room_id = $_POST['room_id'] ?? '';
+$location_id = $_POST['location_id'] ?? '';
+$location_type = $_POST['location_type'] ?? 'Room';
 
-if (empty($email) || empty($room_id)) {
-    echo json_encode(["status" => "error", "message" => "Missing email or room_id"]);
+if (empty($email) || empty($location_id)) {
+    echo json_encode(["status" => "error", "message" => "Missing data"]);
     exit();
 }
 
-// 1. Get User ID
 $userQ = $conn->prepare("SELECT id FROM users WHERE email = ?");
 $userQ->bind_param("s", $email);
 $userQ->execute();
 $res = $userQ->get_result();
-
-if ($res->num_rows == 0) {
-    echo json_encode(["status" => "error", "message" => "User not found"]);
+if ($res->num_rows == 0)
     exit();
-}
-
 $user_id = $res->fetch_assoc()['id'];
 
-// 2. Insert into History
-$stmt = $conn->prepare("INSERT INTO history (user_id, room_id) VALUES (?, ?)");
-$stmt->bind_param("ii", $user_id, $room_id);
-
-if ($stmt->execute()) {
-    echo json_encode(["status" => "success"]);
-} else {
-    echo json_encode(["status" => "error", "message" => $stmt->error]);
-}
+// ALWAYS INSERT: We want a new row every time so the Stats Screen tracks the exact visit count
+$insertQ = $conn->prepare("INSERT INTO history (user_id, location_id, location_type) VALUES (?, ?, ?)");
+$insertQ->bind_param("iis", $user_id, $location_id, $location_type);
+echo json_encode(["status" => $insertQ->execute() ? "success" : "error"]);
 ?>
