@@ -492,6 +492,6 @@ $buildings = $conn->query("SELECT * FROM buildings ORDER BY name ASC");
     });
 </script>
 
-<script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&callback=initMap" async defer></script>
+<script src="https://maps.googleapis.com/maps/api/js?key=<?= $apiKey ?>&callback=initMap" async defer></script>
 
 <?php include 'includes/footer.php'; ?>
