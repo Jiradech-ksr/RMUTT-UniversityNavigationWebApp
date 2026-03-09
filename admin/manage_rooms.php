@@ -7,8 +7,14 @@ $apiKey = $_ENV['GOOGLE_MAPS_API_KEY'];
 // ==========================================
 // 1. จัดการเพิ่มข้อมูล (Add Data)
 // ==========================================
+$faculty_query = $conn->query("SELECT * FROM faculties ORDER BY id ASC");
+$faculties_list = [];
+while ($row = $faculty_query->fetch_assoc()) {
+    $faculties_list[] = $row;
+}
 if (isset($_POST['add_building'])) {
     $name = $_POST['building_name'];
+    $faculty_id = (int) $_POST['faculty_id'];
     $lat = !empty($_POST['latitude']) ? $_POST['latitude'] : null;
     $lng = !empty($_POST['longitude']) ? $_POST['longitude'] : null;
 
@@ -60,6 +66,7 @@ if (isset($_POST['add_room'])) {
 if (isset($_POST['edit_building'])) {
     $id = (int) $_POST['building_id'];
     $name = $_POST['building_name'];
+    $faculty_id = (int) $_POST['faculty_id'];
     $lat = !empty($_POST['latitude']) ? $_POST['latitude'] : null;
     $lng = !empty($_POST['longitude']) ? $_POST['longitude'] : null;
 
@@ -253,6 +260,17 @@ $buildings = $conn->query("SELECT * FROM buildings ORDER BY name ASC");
                         <input type="text" name="building_name" class="form-control" required
                             placeholder="เช่น ตึกวิศวกรรมคอมพิวเตอร์">
                     </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">คณะ / หน่วยงาน (Faculty) <span
+                                class="text-danger">*</span></label>
+                        <select name="faculty_id" class="form-select" required>
+                            <?php foreach ($faculties_list as $fac): ?>
+                                <option value="<?= $fac['id']; ?>">
+                                    <?= htmlspecialchars($fac['name']); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
                     <div class="mb-3 border rounded p-3 bg-light">
                         <label class="form-label fw-bold text-primary"><i class="fas fa-image me-1"></i> รูปภาพอาคาร
                             (Building Image)</label>
@@ -348,6 +366,17 @@ $buildings = $conn->query("SELECT * FROM buildings ORDER BY name ASC");
                     <div class="mb-3">
                         <label class="form-label fw-bold">ชื่ออาคาร <span class="text-danger">*</span></label>
                         <input type="text" name="building_name" id="edit_building_name" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">คณะ / หน่วยงาน (Faculty) <span
+                                class="text-danger">*</span></label>
+                        <select name="faculty_id" id="edit_faculty_id" class="form-select" required>
+                            <?php foreach ($faculties_list as $fac): ?>
+                                <option value="<?= $fac['id']; ?>">
+                                    <?= htmlspecialchars($fac['name']); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
                     </div>
                     <div class="mb-3 border rounded p-3 bg-light">
                         <label class="form-label fw-semi bold text-primary"><i class="fas fa-image me-1"></i>

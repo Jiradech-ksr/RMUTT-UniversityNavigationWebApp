@@ -1,5 +1,5 @@
 <?php
-// 1. TURN ERRORS ON (So you can see if something crashes)
+// 1. TURN ERRORS ON
 error_reporting(E_ALL);
 ini_set('display_errors', 0);
 
@@ -14,14 +14,13 @@ function makeFullUrl($dbPath)
     if (empty($dbPath))
         return null;
 
-    // Fallback: If the path already has 'http' from your old test data, just return it
+    // Fallback
     if (strpos($dbPath, 'http') === 0) {
         return $dbPath;
     }
 
-    // Otherwise, build the full URL dynamically based on the current server
     $protocol = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? "https" : "http";
-    $host = $_SERVER['HTTP_HOST']; // Grabs localhost, 192.168.x.x, or your production domain
+    $host = $_SERVER['HTTP_HOST'];
 
     return $protocol . "://" . $host . "/" . ltrim($dbPath, '/');
 }
