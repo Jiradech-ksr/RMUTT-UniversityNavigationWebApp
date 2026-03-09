@@ -3,7 +3,6 @@ include 'includes/header.php';
 require_once '../api/upload_helper.php';
 require_once 'includes/env_loader.php';
 $apiKey = $_ENV['GOOGLE_MAPS_API_KEY'];
-
 // ==========================================
 // 1. จัดการเพิ่มข้อมูล (Add Data)
 // ==========================================
@@ -12,18 +11,36 @@ $faculties_list = [];
 while ($row = $faculty_query->fetch_assoc()) {
     $faculties_list[] = $row;
 }
+
 if (isset($_POST['add_building'])) {
     $name = $_POST['building_name'];
     $faculty_id = (int) $_POST['faculty_id'];
     $lat = !empty($_POST['latitude']) ? $_POST['latitude'] : null;
     $lng = !empty($_POST['longitude']) ? $_POST['longitude'] : null;
 
-    $image_url = uploadFileSafely($_FILES['building_image'], "buildings", "../");
+    $image_url = null;
+    $upload_error = "";
+
+    // Check if a file was actually uploaded by the user
+    if (isset($_FILES['building_image']) && $_FILES['building_image']['error'] !== UPLOAD_ERR_NO_FILE) {
+        $image_url = uploadFileSafely($_FILES['building_image'], "buildings", "../");
+        if ($image_url === null) {
+            $upload_error = " (แต่รูปภาพอัปโหลดไม่สำเร็จ กรุณาตรวจสอบขนาดหรือนามสกุลไฟล์)";
+        }
+    }
 
     $stmt = $conn->prepare("INSERT INTO buildings (name, latitude, longitude, image_url) VALUES (?, ?, ?, ?)");
     $stmt->bind_param("sdds", $name, $lat, $lng, $image_url);
-    if ($stmt->execute())
-        $alert = "<div class='alert alert-success'>เพิ่มอาคารและรูปภาพเรียบร้อยแล้ว</div>";
+
+    if ($stmt->execute()) {
+        if ($upload_error) {
+            $alert = "<div class='alert alert-warning'><i class='fas fa-exclamation-circle'></i> เพิ่มอาคารแล้ว $upload_error</div>";
+        } else {
+            $alert = "<div class='alert alert-success'><i class='fas fa-check-circle'></i> เพิ่มอาคารเรียบร้อยแล้ว</div>";
+        }
+    } else {
+        $alert = "<div class='alert alert-danger'><i class='fas fa-times-circle'></i> Error: " . htmlspecialchars($stmt->error) . "</div>";
+    }
 }
 
 if (isset($_POST['add_room'])) {
@@ -31,33 +48,18 @@ if (isset($_POST['add_room'])) {
     $room_number = $_POST['room_number'];
     $room_name = $_POST['room_name'];
     $floor = $_POST['floor'];
-    $floor_layout_url = null;
-    $image_url = null;
 
-    // 1. อัปโหลดแผนผังห้อง (Layout)
     $floor_layout_url = uploadFileSafely($_FILES['room_layout'], "layouts", "../");
-
-    if ($floor_layout_url) {
-        // It uploaded successfully! Proceed to update the database.
-        $stmt_ly = $conn->prepare("UPDATE rooms SET floor_layout_url=? WHERE id=?");
-        $stmt_ly->bind_param("si", $floor_layout_url, $id);
-        $stmt_ly->execute();
-    }
-
-    // 2. อัปโหลดรูปภาพสถานที่จริง (Image)
     $image_url = uploadFileSafely($_FILES['room_image'], "images", "../");
-
-    if ($image_url) {
-        // It uploaded successfully! Proceed to update the database.
-        $stmt_img = $conn->prepare("UPDATE rooms SET image_url=? WHERE id=?");
-        $stmt_img->bind_param("si", $image_url, $id);
-        $stmt_img->execute();
-    }
 
     $stmt = $conn->prepare("INSERT INTO rooms (building_id, room_number, name, floor, floor_layout_url, image_url) VALUES (?, ?, ?, ?, ?, ?)");
     $stmt->bind_param("isssss", $building_id, $room_number, $room_name, $floor, $floor_layout_url, $image_url);
-    if ($stmt->execute())
-        $alert = "<div class='alert alert-success'>เพิ่มห้องเรียนและรูปภาพเรียบร้อยแล้ว</div>";
+
+    if ($stmt->execute()) {
+        $alert = "<div class='alert alert-success'><i class='fas fa-check-circle'></i> เพิ่มห้องเรียนและรูปภาพเรียบร้อยแล้ว</div>";
+    } else {
+        $alert = "<div class='alert alert-danger'><i class='fas fa-times-circle'></i> Error: " . htmlspecialchars($stmt->error) . "</div>";
+    }
 }
 
 // ==========================================
@@ -72,8 +74,12 @@ if (isset($_POST['edit_building'])) {
 
     $stmt = $conn->prepare("UPDATE buildings SET name=?, latitude=?, longitude=? WHERE id=?");
     $stmt->bind_param("sddi", $name, $lat, $lng, $id);
-    if ($stmt->execute())
-        $alert = "<div class='alert alert-success'>แก้ไขข้อมูลอาคารเรียบร้อยแล้ว</div>";
+
+    if ($stmt->execute()) {
+        $alert = "<div class='alert alert-success'><i class='fas fa-check-circle'></i> แก้ไขข้อมูลอาคารเรียบร้อยแล้ว</div>";
+    } else {
+        $alert = "<div class='alert alert-danger'><i class='fas fa-times-circle'></i> Error: " . htmlspecialchars($stmt->error) . "</div>";
+    }
 
     // Update Building Image if a new one is uploaded
     if (isset($_FILES['building_image']) && $_FILES['building_image']['error'] == 0) {
@@ -95,14 +101,17 @@ if (isset($_POST['edit_room'])) {
     // อัปเดตข้อมูลทั่วไป
     $stmt = $conn->prepare("UPDATE rooms SET room_number=?, name=?, floor=? WHERE id=?");
     $stmt->bind_param("sssi", $room_number, $room_name, $floor, $id);
-    $stmt->execute();
+
+    if ($stmt->execute()) {
+        $alert = "<div class='alert alert-success'><i class='fas fa-check-circle'></i> แก้ไขข้อมูลห้องเรียนเรียบร้อยแล้ว</div>";
+    } else {
+        $alert = "<div class='alert alert-danger'><i class='fas fa-times-circle'></i> Error: " . htmlspecialchars($stmt->error) . "</div>";
+    }
 
     // 1. อัปเดตแผนผังห้อง (Layout)
     if (isset($_FILES['room_layout']) && $_FILES['room_layout']['error'] == 0) {
-        $file_name = time() . "_layout_" . basename($_FILES["room_layout"]["name"]);
-        $target_file = "../uploads/layouts/" . $file_name;
-        if (move_uploaded_file($_FILES["room_layout"]["tmp_name"], $target_file)) {
-            $floor_layout_url = "uploads/layouts/" . $file_name;
+        $floor_layout_url = uploadFileSafely($_FILES['room_layout'], "layouts", "../");
+        if ($floor_layout_url) {
             $stmt_ly = $conn->prepare("UPDATE rooms SET floor_layout_url=? WHERE id=?");
             $stmt_ly->bind_param("si", $floor_layout_url, $id);
             $stmt_ly->execute();
@@ -111,16 +120,13 @@ if (isset($_POST['edit_room'])) {
 
     // 2. อัปเดตรูปภาพสถานที่จริง (Image)
     if (isset($_FILES['room_image']) && $_FILES['room_image']['error'] == 0) {
-        $file_name = time() . "_img_" . basename($_FILES["room_image"]["name"]);
-        $target_file = "../uploads/images/" . $file_name;
-        if (move_uploaded_file($_FILES["room_image"]["tmp_name"], $target_file)) {
-            $image_url = "uploads/images/" . $file_name;
+        $image_url = uploadFileSafely($_FILES['room_image'], "images", "../");
+        if ($image_url) {
             $stmt_img = $conn->prepare("UPDATE rooms SET image_url=? WHERE id=?");
             $stmt_img->bind_param("si", $image_url, $id);
             $stmt_img->execute();
         }
     }
-    $alert = "<div class='alert alert-success'>แก้ไขข้อมูลห้องเรียนเรียบร้อยแล้ว</div>";
 }
 
 // ==========================================
@@ -132,6 +138,8 @@ if (isset($_GET['delete_room'])) {
     $stmt->bind_param("i", $id);
     if ($stmt->execute()) {
         echo "<script>window.location='manage_rooms.php';</script>";
+    } else {
+        $alert = "<div class='alert alert-danger'><i class='fas fa-exclamation-triangle'></i> Error: " . htmlspecialchars($stmt->error) . "</div>";
     }
 }
 
@@ -139,8 +147,13 @@ if (isset($_GET['delete_building'])) {
     $id = (int) $_GET['delete_building'];
     $stmt = $conn->prepare("DELETE FROM buildings WHERE id = ?");
     $stmt->bind_param("i", $id);
+
     if ($stmt->execute()) {
-        echo "<script>window.location='manage_rooms.php';</script>";
+        // Redirect with a success flag in the URL
+        echo "<script>window.location='manage_rooms.php?msg=deleted';</script>";
+    } else {
+        // Usually fails because there are still rooms in this building
+        $alert = "<div class='alert alert-danger'><i class='fas fa-exclamation-triangle'></i> ไม่สามารถลบอาคารได้: กรุณาลบห้องเรียนในอาคารนี้ให้หมดก่อน (Error: " . htmlspecialchars($stmt->error) . ")</div>";
     }
 }
 
@@ -284,7 +297,8 @@ $buildings = $conn->query("SELECT * FROM buildings ORDER BY name ASC");
                     <div class="row">
                         <div class="col-6 mb-3">
                             <label class="form-label text-muted small">ละติจูด (Latitude)</label>
-                            <input type="text" id="add_latInput" name="latitude" class="form-control bg-light" readonly>
+                            <input type="text" id="add_latInput" name="latitude" class="form-control bg-light" readonly
+                                required>
                         </div>
                         <div class="col-6 mb-3">
                             <label class="form-label text-muted small">ลองจิจูด (Longitude)</label>
