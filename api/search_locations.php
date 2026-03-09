@@ -22,7 +22,7 @@ try {
         longitude, 
         NULL as room_number, 
         NULL as floor,
-        NULL as image_url, 
+        image_url, /* CHANGED THIS FROM NULL */
         NULL as floor_layout_url,
         name as building_name
     FROM buildings 

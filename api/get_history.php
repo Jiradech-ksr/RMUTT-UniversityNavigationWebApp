@@ -29,7 +29,7 @@ $sql = "SELECT
             h.id as history_id, h.visited_at, h.location_type as type, h.location_id,
             r.id as r_id, r.name as r_name, r.room_number, r.floor, r.image_url as r_image, r.floor_layout_url,
             b1.name as r_building_name, b1.latitude as r_lat, b1.longitude as r_lng,
-            b2.id as b_id, b2.name as b_name, b2.latitude as b_lat, b2.longitude as b_lng
+            b2.id as b_id, b2.name as b_name, b2.latitude as b_lat, b2.longitude as b_lng, b2.image_url as b_image
         FROM history h
         JOIN users u ON h.user_id = u.id
         LEFT JOIN rooms r ON h.location_type = 'Room' AND h.location_id = r.id
@@ -55,7 +55,7 @@ while ($row = $result->fetch_assoc()) {
     $item['longitude'] = $isBuilding ? $row['b_lng'] : $row['r_lng'];
     $item['department_name'] = $isBuilding ? $row['b_name'] : $row['r_building_name'];
 
-    $item['image_url'] = !$isBuilding ? makeFullUrl($row['r_image']) : null;
+    $item['image_url'] = !$isBuilding ? makeFullUrl($row['r_image']) : makeFullUrl($row['b_image']);
     $item['floor_layout_url'] = !$isBuilding ? makeFullUrl($row['floor_layout_url']) : null;
     $item['room_number'] = !$isBuilding ? (string) $row['room_number'] : null;
     $item['floor'] = !$isBuilding ? $row['floor'] : null;

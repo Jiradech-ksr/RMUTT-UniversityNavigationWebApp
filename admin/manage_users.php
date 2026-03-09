@@ -3,39 +3,52 @@ include 'includes/header.php';
 
 // --- 1. HANDLE FORM SUBMISSIONS ---
 // Add New Staff/Technician
+// Add User Logic
 if (isset($_POST['add_user'])) {
-    $email = $_POST['email'];
-    $role = $_POST['role'];
-    $name = $_POST['name'];
-
-    $check = $conn->query("SELECT id FROM users WHERE email = '$email'");
-    if ($check->num_rows > 0) {
-        $alert = "<div class='alert alert-danger'>อีเมลนี้มีอยู่ในระบบแล้ว (Email already exists)</div>";
+    // SECURITY CHECK: Only admins can add users
+    if ($_SESSION['admin_role'] !== 'admin') {
+        $alert = "<div class='alert alert-danger'>ข้อผิดพลาด: เฉพาะ Admin เท่านั้นที่สามารถเพิ่มบัญชีใหม่ได้ (Access Denied)</div>";
     } else {
-        $stmt = $conn->prepare("INSERT INTO users (display_name, email, role, status) VALUES (?, ?, ?, 'active')");
-        $stmt->bind_param("sss", $name, $email, $role);
-        if ($stmt->execute()) {
-            $alert = "<div class='alert alert-success'>เพิ่มผู้ใช้งานเรียบร้อยแล้ว (User added successfully)</div>";
+        $name = $_POST['display_name'];
+        $email = $_POST['email'];
+        $role = $_POST['role'];
+
+        // เช็คว่ามีอีเมลนี้ในระบบหรือยัง
+        $check = $conn->prepare("SELECT id FROM users WHERE email=?");
+        $check->bind_param("s", $email);
+        $check->execute();
+        if ($check->get_result()->num_rows > 0) {
+            $alert = "<div class='alert alert-warning'>อีเมลนี้มีในระบบแล้ว</div>";
+        } else {
+            $stmt = $conn->prepare("INSERT INTO users (display_name, email, role) VALUES (?, ?, ?)");
+            $stmt->bind_param("sss", $name, $email, $role);
+            if ($stmt->execute())
+                $alert = "<div class='alert alert-success'>เพิ่มผู้ใช้งานเรียบร้อยแล้ว</div>";
         }
     }
+
 }
 
 // Ban / Unban User
 if (isset($_GET['ban_id'])) {
-    $id = (int) $_GET['ban_id'];
-    $current_status = $_GET['status'];
-    $new_status = ($current_status == 'active') ? 'banned' : 'active';
+    if ($_SESSION['admin_role'] === 'admin') { // <-- เพิ่มเช็คสิทธิ์
+        $id = (int) $_GET['ban_id'];
+        $current_status = $_GET['status'];
+        $new_status = ($current_status == 'active') ? 'banned' : 'active';
 
-    $stmt = $conn->prepare("UPDATE users SET status = ? WHERE id = ?");
-    $stmt->bind_param("si", $new_status, $id);
-    $stmt->execute();
+        $stmt = $conn->prepare("UPDATE users SET status = ? WHERE id = ?");
+        $stmt->bind_param("si", $new_status, $id);
+        $stmt->execute();
+    }
     echo "<script>window.location='manage_users.php';</script>";
 }
 
 // Remove User
 if (isset($_GET['delete_id'])) {
-    $id = (int) $_GET['delete_id'];
-    $conn->query("DELETE FROM users WHERE id = $id");
+    if ($_SESSION['admin_role'] === 'admin') { // <-- เพิ่มเช็คสิทธิ์
+        $id = (int) $_GET['delete_id'];
+        $conn->query("DELETE FROM users WHERE id = $id");
+    }
     echo "<script>window.location='manage_users.php';</script>";
 }
 
@@ -211,7 +224,10 @@ $staff_query = $conn->query("SELECT * FROM users WHERE role IN ('admin', 'staff'
                                     <?= ($u['status'] == 'active') ? '<span class="badge bg-success"><i class="fas fa-check-circle"></i> Active</span>' : '<span class="badge bg-secondary"><i class="fas fa-ban"></i> Banned</span>'; ?>
                                 </td>
                                 <td class="text-end px-4">
-                                    <?php if ($u['role'] != 'admin'): ?>
+                                    <?php if ($u['role'] == 'admin'): ?>
+                                        <span class="text-muted small"><i class="fas fa-shield-alt"></i> Protected</span>
+
+                                    <?php elseif ($_SESSION['admin_role'] === 'admin'): ?>
                                         <a href="?ban_id=<?= $u['id']; ?>&status=<?= $u['status']; ?>"
                                             class="btn btn-sm <?= ($u['status'] == 'active') ? 'btn-warning' : 'btn-success'; ?> me-1"
                                             title="<?= ($u['status'] == 'active') ? 'ระงับสิทธิ์' : 'คืนสิทธิ์'; ?>">
@@ -219,8 +235,9 @@ $staff_query = $conn->query("SELECT * FROM users WHERE role IN ('admin', 'staff'
                                         </a>
                                         <a href="?delete_id=<?= $u['id']; ?>" class="btn btn-sm btn-outline-danger"
                                             onclick="return confirm('ลบบัญชีนี้ถาวร?');"><i class="fas fa-trash-alt"></i></a>
+
                                     <?php else: ?>
-                                        <span class="text-muted small"><i class="fas fa-shield-alt"></i> Protected</span>
+                                        <span class="text-muted small"><i class="fas fa-lock"></i> No Access</span>
                                     <?php endif; ?>
                                 </td>
                             </tr>

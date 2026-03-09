@@ -12,10 +12,12 @@ if (isset($_POST['add_building'])) {
     $lat = !empty($_POST['latitude']) ? $_POST['latitude'] : null;
     $lng = !empty($_POST['longitude']) ? $_POST['longitude'] : null;
 
-    $stmt = $conn->prepare("INSERT INTO buildings (name, latitude, longitude) VALUES (?, ?, ?)");
-    $stmt->bind_param("sdd", $name, $lat, $lng);
+    $image_url = uploadFileSafely($_FILES['building_image'], "buildings", "../");
+
+    $stmt = $conn->prepare("INSERT INTO buildings (name, latitude, longitude, image_url) VALUES (?, ?, ?, ?)");
+    $stmt->bind_param("sdds", $name, $lat, $lng, $image_url);
     if ($stmt->execute())
-        $alert = "<div class='alert alert-success'>เพิ่มอาคารเรียบร้อยแล้ว</div>";
+        $alert = "<div class='alert alert-success'>เพิ่มอาคารและรูปภาพเรียบร้อยแล้ว</div>";
 }
 
 if (isset($_POST['add_room'])) {
@@ -65,6 +67,16 @@ if (isset($_POST['edit_building'])) {
     $stmt->bind_param("sddi", $name, $lat, $lng, $id);
     if ($stmt->execute())
         $alert = "<div class='alert alert-success'>แก้ไขข้อมูลอาคารเรียบร้อยแล้ว</div>";
+
+    // Update Building Image if a new one is uploaded
+    if (isset($_FILES['building_image']) && $_FILES['building_image']['error'] == 0) {
+        $image_url = uploadFileSafely($_FILES['building_image'], "buildings", "../");
+        if ($image_url) {
+            $stmt_img = $conn->prepare("UPDATE buildings SET image_url=? WHERE id=?");
+            $stmt_img->bind_param("si", $image_url, $id);
+            $stmt_img->execute();
+        }
+    }
 }
 
 if (isset($_POST['edit_room'])) {
@@ -234,12 +246,18 @@ $buildings = $conn->query("SELECT * FROM buildings ORDER BY name ASC");
                 <h5 class="modal-title"><i class="fas fa-building"></i> เพิ่มอาคารใหม่</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <form method="POST">
+            <form method="POST" enctype="multipart/form-data">
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label fw-bold">ชื่ออาคาร <span class="text-danger">*</span></label>
                         <input type="text" name="building_name" class="form-control" required
                             placeholder="เช่น ตึกวิศวกรรมคอมพิวเตอร์">
+                    </div>
+                    <div class="mb-3 border rounded p-3 bg-light">
+                        <label class="form-label fw-bold text-primary"><i class="fas fa-image me-1"></i> รูปภาพอาคาร
+                            (Building Image)</label>
+                        <input type="file" name="building_image" class="form-control"
+                            accept="image/jpeg, image/png, image/jpg">
                     </div>
                     <label class="form-label fw-bold">ระบุพิกัดตำแหน่งอาคาร (คลิกบนแผนที่)</label>
                     <div id="addMapPicker"
@@ -324,12 +342,19 @@ $buildings = $conn->query("SELECT * FROM buildings ORDER BY name ASC");
                 <h5 class="modal-title"><i class="fas fa-edit"></i> แก้ไขข้อมูลและพิกัดอาคาร</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form method="POST">
+            <form method="POST" enctype="multipart/form-data">
                 <div class="modal-body">
                     <input type="hidden" name="building_id" id="edit_building_id">
                     <div class="mb-3">
                         <label class="form-label fw-bold">ชื่ออาคาร <span class="text-danger">*</span></label>
                         <input type="text" name="building_name" id="edit_building_name" class="form-control" required>
+                    </div>
+                    <div class="mb-3 border rounded p-3 bg-light">
+                        <label class="form-label fw-semi bold text-primary"><i class="fas fa-image me-1"></i>
+                            เปลี่ยนรูปภาพอาคาร</label>
+                        <input type="file" name="building_image" class="form-control mb-1"
+                            accept="image/jpeg, image/png, image/jpg">
+                        <small class="text-muted d-block">ปล่อยว่างไว้หากไม่ต้องการเปลี่ยน</small>
                     </div>
                     <label class="form-label fw-bold">แก้ไขพิกัดตำแหน่งอาคาร (คลิกย้ายหมุดบนแผนที่)</label>
                     <div id="editMapPicker"

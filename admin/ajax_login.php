@@ -11,8 +11,11 @@ if (isset($_POST['credential'])) {
 
     $email = $jwtPayload->email;
 
+    // ดึงรูปภาพจาก Google JWT Payload (ถ้ามี)
+    $google_photo = isset($jwtPayload->picture) ? $jwtPayload->picture : '';
+
     // ตรวจสอบฐานข้อมูล
-    $stmt = $conn->prepare("SELECT id, display_name, email, role, status, photo_url FROM users WHERE email = ?");
+    $stmt = $conn->prepare("SELECT id, display_name, email, role, status FROM users WHERE email = ?");
     $stmt->bind_param("s", $email);
     $stmt->execute();
     $result = $stmt->get_result();
@@ -29,13 +32,21 @@ if (isset($_POST['credential'])) {
         // 2. เช็คว่ามีสิทธิ์เข้าหลังบ้านไหม (ต้องไม่ใช่ student)
         if (in_array($user['role'], ['admin', 'staff', 'technician'])) {
 
+            // อัปเดตรูปภาพโปรไฟล์ในฐานข้อมูลให้เป็นรูปล่าสุดจาก Google
+            if (!empty($google_photo)) {
+                $update_stmt = $conn->prepare("UPDATE users SET photo_url = ? WHERE id = ?");
+                $update_stmt->bind_param("si", $google_photo, $user['id']);
+                $update_stmt->execute();
+            }
+
             // ผ่านเงื่อนไข -> สร้าง Session
             $_SESSION['admin_logged_in'] = true;
             $_SESSION['admin_id'] = $user['id'];
             $_SESSION['admin_name'] = $user['display_name'];
             $_SESSION['admin_email'] = $user['email'];
             $_SESSION['admin_role'] = $user['role'];
-            $_SESSION['admin_photo'] = $user['photo_url'];
+            // ใช้รูปจาก Google ถ้ามี ถ้าไม่มีให้ใช้จากฐานข้อมูลเดิม
+            $_SESSION['admin_photo'] = !empty($google_photo) ? $google_photo : '';
 
             echo json_encode(["status" => "success"]);
             exit();
