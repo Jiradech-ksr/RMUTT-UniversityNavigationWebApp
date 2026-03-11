@@ -1,7 +1,6 @@
 <?php
 include 'includes/header.php';
 require_once '../api/upload_helper.php';
-require_once 'includes/env_loader.php';
 $apiKey = $_ENV['GOOGLE_MAPS_API_KEY'];
 // ==========================================
 // 1. จัดการเพิ่มข้อมูล (Add Data)
@@ -29,8 +28,11 @@ if (isset($_POST['add_building'])) {
         }
     }
 
-    $stmt = $conn->prepare("INSERT INTO buildings (name, latitude, longitude, image_url) VALUES (?, ?, ?, ?)");
-    $stmt->bind_param("sdds", $name, $lat, $lng, $image_url);
+    $name_en = $_POST['building_name_en'];
+    $name_th = $_POST['building_name_th'];
+
+    $stmt = $conn->prepare("INSERT INTO buildings (name_en, name_th, latitude, longitude, image_url) VALUES (?, ?, ?, ?, ?)");
+    $stmt->bind_param("ssdds", $name_en, $name_th, $lat, $lng, $image_url);
 
     if ($stmt->execute()) {
         if ($upload_error) {
@@ -269,8 +271,10 @@ $buildings = $conn->query("SELECT * FROM buildings ORDER BY name ASC");
             <form method="POST" enctype="multipart/form-data">
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label class="form-label fw-bold">ชื่ออาคาร <span class="text-danger">*</span></label>
-                        <input type="text" name="building_name" class="form-control" required
+                        <label>ชื่ออาคาร (English)</label>
+                        <input type="text" name="building_name_en" class="form-control" required>
+                        <label>ชื่ออาคาร (ภาษาไทย)</label>
+                        <input type="text" name="building_name_th" class="form-control"
                             placeholder="เช่น ตึกวิศวกรรมคอมพิวเตอร์">
                     </div>
                     <div class="mb-3">

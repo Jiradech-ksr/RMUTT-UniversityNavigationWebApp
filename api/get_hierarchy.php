@@ -44,7 +44,8 @@ if ($result_buildings->num_rows > 0) {
 
         $buildingNode = [
             "id" => $building['id'],
-            "title" => $building['name'],
+            "title_en" => $building['name_en'], // Changed
+            "title_th" => $building['name_th'], // Added
             "type" => "building",
             "lat" => $building['latitude'],
             "lng" => $building['longitude'],
@@ -65,7 +66,8 @@ if ($result_buildings->num_rows > 0) {
 
                 $roomNode = [
                     "id" => $room['id'],
-                    "title" => $room['name'],
+                    "title_en" => $room['name_en'], // Changed
+                    "title_th" => $room['name_th'], // Added
                     "room_number" => $room['room_number'],
                     "floor" => $room['floor'],
                     "type" => "room",

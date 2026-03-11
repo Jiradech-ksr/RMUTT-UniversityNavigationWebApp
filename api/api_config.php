@@ -1,10 +1,14 @@
 <?php
-$protocol = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? "https" : "http";
+require_once __DIR__ . '/../admin/includes/env_loader.php';
+loadEnv(__DIR__ . '/../.env');
 
-$host = $_SERVER['HTTP_HOST'];
+$api_base_url = getenv('API_BASE_URL');
 
-$base_ip = $protocol . "://" . $host;
+if (!$api_base_url) {
+    $protocol = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http");
+    $host = $_SERVER['HTTP_HOST'];
+    $api_base_url = $protocol . "://" . $host . "/api";
+}
 
-$upload_path = "/UniversityNavigationWebApp/uploads/reports/";
-$full_base_url = $base_ip . $upload_path;
+define('API_URL', $api_base_url);
 ?>
