@@ -160,8 +160,7 @@ if (isset($_GET['delete_building'])) {
 }
 
 // ดึงข้อมูลอาคารทั้งหมด
-$buildings = $conn->query("SELECT * FROM buildings ORDER BY name ASC");
-?>
+$buildings = $conn->query("SELECT * FROM buildings ORDER BY name_en ASC"); ?>
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h3 class="text-dark"><i class="fas fa-building text-primary me-2"></i> จัดการอาคารและห้องเรียน</h3>
@@ -178,7 +177,7 @@ $buildings = $conn->query("SELECT * FROM buildings ORDER BY name ASC");
     if ($buildings->num_rows > 0):
         while ($b = $buildings->fetch_assoc()):
             $b_id = $b['id'];
-            $b_name = htmlspecialchars($b['name'], ENT_QUOTES);
+            $b_name = htmlspecialchars($b['name_en'], ENT_QUOTES);
             $b_lat = $b['latitude'] ?? '';
             $b_lng = $b['longitude'] ?? '';
 
@@ -188,7 +187,7 @@ $buildings = $conn->query("SELECT * FROM buildings ORDER BY name ASC");
                 <h2 class="accordion-header" id="heading<?= $b_id; ?>">
                     <button class="accordion-button collapsed fw-semi bold text-indigo" style="background-color: #f8f9fc;"
                         type="button" data-bs-toggle="collapse" data-bs-target="#collapse<?= $b_id; ?>">
-                        <i class="fas fa-map-marker-alt me-2 text-danger"></i> <?= htmlspecialchars($b['name']); ?>
+                        <i class="fas fa-map-marker-alt me-2 text-danger"></i> <?= htmlspecialchars($b['name_en']); ?>
                         <span class="badge bg-secondary ms-3"><?= $rooms->num_rows; ?> ห้อง</span>
                     </button>
                 </h2>

@@ -13,7 +13,7 @@ if (empty($email)) {
     exit();
 }
 
-$sql = "SELECT r.*, b.name as building_name, b.latitude, b.longitude 
+$sql = "SELECT r.*, b.name_en as building_name, b.latitude, b.longitude 
         FROM favorites f
         JOIN users u ON f.user_id = u.id
         JOIN rooms r ON f.room_id = r.id

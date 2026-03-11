@@ -10,7 +10,7 @@ if (isset($_GET['resolve_id'])) {
 }
 
 // ดึงข้อมูลรายงานปัญหา พร้อมชื่อคนแจ้งและชื่อห้อง
-$sql = "SELECT r.*, u.display_name, rm.name as room_name, rm.room_number, b.name as building_name 
+$sql = "SELECT r.*, u.display_name, rm.name_en as room_name, rm.room_number, b.name_en as building_name 
         FROM reports r 
         JOIN users u ON r.user_id = u.id 
         LEFT JOIN rooms rm ON r.room_id = rm.id 

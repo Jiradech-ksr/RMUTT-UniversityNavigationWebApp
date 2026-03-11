@@ -17,8 +17,8 @@ if ($days === 'all') {
 } elseif ($days === '30') {
     $where_pending = "WHERE status = 'pending' AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
     $where_resolved = "WHERE status = 'resolved' AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
-    $date_label = "ย้อนหลัง 30 วัน (4 Weeks)";
-    $sql_time = "SELECT YEARWEEK(visited_at, 1) as raw_week, COUNT(*) as count FROM history WHERE visited_at >= DATE_SUB(NOW(), INTERVAL 30 DAY) GROUP BY raw_week ORDER BY raw_week ASC";
+    $date_label = "ย้อนหลัง 30 วัน (30 Days)";
+    $sql_time = "SELECT DATE(visited_at) as raw_date, DATE_FORMAT(visited_at, '%d/%m') as label, COUNT(*) as count FROM history WHERE visited_at >= DATE_SUB(NOW(), INTERVAL 30 DAY) GROUP BY raw_date, label ORDER BY raw_date ASC";
 } else { 
     $days = '7';
     $where_pending = "WHERE status = 'pending' AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)";
@@ -38,30 +38,69 @@ $resolved_reports = $conn->query("SELECT COUNT(*) as count FROM reports $where_r
 $res_time = $conn->query($sql_time);
 $chart_labels_time = [];
 $chart_data_time = [];
-$wk_counter = 1;
 
+$data_map = [];
 if ($res_time && $res_time->num_rows > 0) {
     while ($row = $res_time->fetch_assoc()) {
-        if ($days === '30') {
-            $chart_labels_time[] = "Week " . $wk_counter++;
-        } elseif ($days === '7') {
-            $chart_labels_time[] = substr($row['label'], 0, 3);
-        } elseif ($days === '365') {
-            $chart_labels_time[] = $row['label'];
+        if ($days === 'all') {
+            $data_map[$row['raw_year']] = $row['count'];
         } else {
-            $chart_labels_time[] = $row['raw_year'];
+            $data_map[$row['raw_date']] = $row['count'];
         }
-        $chart_data_time[] = $row['count'];
+    }
+}
+
+if ($days === '7') {
+    for ($i = 6; $i >= 0; $i--) {
+        $date = date('Y-m-d', strtotime("-$i days"));
+        $label = date('D', strtotime("-$i days"));
+        $chart_labels_time[] = $label;
+        $chart_data_time[] = isset($data_map[$date]) ? (int)$data_map[$date] : 0;
+    }
+} elseif ($days === '30') {
+    for ($i = 29; $i >= 0; $i--) {
+        $date = date('Y-m-d', strtotime("-$i days"));
+        $label = date('d/m', strtotime("-$i days"));
+        $chart_labels_time[] = $label;
+        $chart_data_time[] = isset($data_map[$date]) ? (int)$data_map[$date] : 0;
+    }
+} elseif ($days === '365') {
+    $months_map = [];
+    for ($i = 11; $i >= 0; $i--) {
+        $ts = mktime(0, 0, 0, date('n') - $i, 1, date('Y'));
+        $date = date('Y-m-01', $ts);
+        $label = date('M', $ts);
+        $months_map[$date] = $label;
+    }
+    foreach ($data_map as $date => $val) {
+        if (!isset($months_map[$date])) {
+            $months_map[$date] = date('M', strtotime($date));
+        }
+    }
+    ksort($months_map);
+    foreach($months_map as $date => $label) {
+        $chart_labels_time[] = $label;
+        $chart_data_time[] = isset($data_map[$date]) ? (int)$data_map[$date] : 0;
     }
 } else {
-    $chart_labels_time = ['ไม่มีข้อมูล'];
-    $chart_data_time = [0];
+    if (empty($data_map)) {
+        $chart_labels_time = ['ไม่มีข้อมูล'];
+        $chart_data_time = [0];
+    } else {
+        $min_year = min(array_keys($data_map));
+        $max_year = date('Y');
+        $max_year = max($max_year, max(array_keys($data_map)));
+        for ($y = $min_year; $y <= $max_year; $y++) {
+            $chart_labels_time[] = (string)$y;
+            $chart_data_time[] = isset($data_map[$y]) ? (int)$data_map[$y] : 0;
+        }
+    }
 }
 
 $chart_data_doughnut = ($pending_reports == 0 && $resolved_reports == 0) ? [1, 0] : [$pending_reports, $resolved_reports];
 
 // --- 4. ดึงข้อมูลห้องที่ถูกค้นหาสูงสุด ---
-$popular_rooms_sql = "SELECT rm.name, rm.room_number, b.name as building_name, COUNT(*) as visits 
+$popular_rooms_sql = "SELECT rm.name_en as name, rm.room_number, b.name_en as building_name, COUNT(*) as visits 
                       FROM history h 
                       JOIN rooms rm ON h.location_id = rm.id AND h.location_type = 'Room'
                       JOIN buildings b ON rm.building_id = b.id
