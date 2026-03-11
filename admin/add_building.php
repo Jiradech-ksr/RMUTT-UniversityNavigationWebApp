@@ -4,7 +4,8 @@ include '../api/db_connect.php';
 $message = "";
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $name = $_POST['name'];
+    $name_en = $_POST['name_en'];
+    $name_th = $_POST['name_th'] ?? '';
     $lat = $_POST['latitude'];
     $lng = $_POST['longitude'];
     $desc = $_POST['description'];
@@ -12,14 +13,19 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // NOTE: We do not upload an image here anymore.
     // We just insert the text details.
 
-    $stmt = $conn->prepare("INSERT INTO buildings (name, latitude, longitude, description) VALUES (?, ?, ?, ?)");
-    $stmt->bind_param("sdds", $name, $lat, $lng, $desc);
+    $stmt = $conn->prepare("INSERT INTO buildings (name_en, name_th, latitude, longitude, description) VALUES (?, ?, ?, ?, ?)");
+    $stmt->bind_param("ssdds", $name_en, $name_th, $lat, $lng, $desc);
 
     if ($stmt->execute()) {
-        $message = "Building '$name' added successfully!";
+        header("Location: add_building.php?msg=" . urlencode("Building '$name_en' added successfully!"));
+        exit();
     } else {
         $message = "Database Error: " . $stmt->error;
     }
+}
+
+if (isset($_GET['msg'])) {
+    $message = htmlspecialchars($_GET['msg']);
 }
 ?>
 
@@ -47,8 +53,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 <form action="add_building.php" method="post">
 
                     <div class="mb-3">
-                        <label>Building Name:</label>
-                        <input type="text" name="name" class="form-control" required>
+                        <label>Building Name (English):</label>
+                        <input type="text" name="name_en" class="form-control" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label>Building Name (ภาษาไทย):</label>
+                        <input type="text" name="name_th" class="form-control">
                     </div>
 
                     <div class="row">

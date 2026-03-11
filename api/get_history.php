@@ -13,7 +13,11 @@ function makeFullUrl($dbPath)
         return $dbPath;
     $protocol = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? "https" : "http";
     $host = $_SERVER['HTTP_HOST'];
-    return $protocol . "://" . $host . "/" . ltrim($dbPath, '/');
+    
+    // Get project root directory, handle nested path
+    $baseDir = rtrim(str_replace('\\', '/', dirname(dirname($_SERVER['SCRIPT_NAME']))), '/');
+    
+    return $protocol . "://" . $host . $baseDir . "/" . ltrim($dbPath, '/');
 }
 
 $email = trim($_GET['email'] ?? '');
@@ -27,9 +31,9 @@ if ($userQ->get_result()->num_rows == 0) {
 
 $sql = "SELECT 
             h.id as history_id, h.visited_at, h.location_type as type, h.location_id,
-            r.id as r_id, r.name_en as r_name, r.room_number, r.floor, r.image_url as r_image, r.floor_layout_url,
-            b1.name_en as r_building_name, b1.latitude as r_lat, b1.longitude as r_lng,
-            b2.id as b_id, b2.name_en as b_name, b2.latitude as b_lat, b2.longitude as b_lng, b2.image_url as b_image
+            r.id as r_id, r.name_en as r_name_en, r.name_th as r_name_th, r.room_number, r.floor, r.image_url as r_image, r.floor_layout_url,
+            b1.name_en as r_building_name_en, b1.name_th as r_building_name_th, b1.latitude as r_lat, b1.longitude as r_lng, b1.image_url as r_building_image,
+            b2.id as b_id, b2.name_en as b_name_en, b2.name_th as b_name_th, b2.latitude as b_lat, b2.longitude as b_lng, b2.image_url as b_image
         FROM history h
         JOIN users u ON h.user_id = u.id
         LEFT JOIN rooms r ON h.location_type = 'Room' AND h.location_id = r.id
@@ -49,13 +53,16 @@ while ($row = $result->fetch_assoc()) {
     $isBuilding = ($row['type'] == 'Building');
 
     $item['id'] = $isBuilding ? $row['b_id'] : $row['r_id'];
-    $item['name'] = $isBuilding ? $row['b_name'] : $row['r_name'];
+    $item['name_en'] = $isBuilding ? $row['b_name_en'] : $row['r_name_en'];
+    $item['name_th'] = $isBuilding ? $row['b_name_th'] : $row['r_name_th'];
     $item['type'] = $row['type'];
     $item['latitude'] = $isBuilding ? $row['b_lat'] : $row['r_lat'];
     $item['longitude'] = $isBuilding ? $row['b_lng'] : $row['r_lng'];
-    $item['department_name'] = $isBuilding ? $row['b_name'] : $row['r_building_name'];
+    $item['department_name_en'] = $isBuilding ? $row['b_name_en'] : $row['r_building_name_en'];
+    $item['department_name_th'] = $isBuilding ? $row['b_name_th'] : $row['r_building_name_th'];
 
     $item['image_url'] = !$isBuilding ? makeFullUrl($row['r_image']) : makeFullUrl($row['b_image']);
+    $item['building_image_url'] = !$isBuilding ? makeFullUrl($row['r_building_image']) : makeFullUrl($row['b_image']);
     $item['floor_layout_url'] = !$isBuilding ? makeFullUrl($row['floor_layout_url']) : null;
     $item['room_number'] = !$isBuilding ? (string) $row['room_number'] : null;
     $item['floor'] = !$isBuilding ? $row['floor'] : null;

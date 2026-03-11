@@ -7,9 +7,9 @@ include 'includes/header.php';
 if (isset($_POST['add_user'])) {
     // SECURITY CHECK: Only admins can add users
     if ($_SESSION['admin_role'] !== 'admin') {
-        $alert = "<div class='alert alert-danger'>ข้อผิดพลาด: เฉพาะ Admin เท่านั้นที่สามารถเพิ่มบัญชีใหม่ได้ (Access Denied)</div>";
+        $_SESSION['alert'] = "<div class='alert alert-danger'>ข้อผิดพลาด: เฉพาะ Admin เท่านั้นที่สามารถเพิ่มบัญชีใหม่ได้ (Access Denied)</div>";
     } else {
-        $name = $_POST['display_name'];
+        $name = $_POST['name'];
         $email = $_POST['email'];
         $role = $_POST['role'];
 
@@ -18,15 +18,16 @@ if (isset($_POST['add_user'])) {
         $check->bind_param("s", $email);
         $check->execute();
         if ($check->get_result()->num_rows > 0) {
-            $alert = "<div class='alert alert-warning'>อีเมลนี้มีในระบบแล้ว</div>";
+            $_SESSION['alert'] = "<div class='alert alert-warning'>อีเมลนี้มีในระบบแล้ว</div>";
         } else {
             $stmt = $conn->prepare("INSERT INTO users (display_name, email, role) VALUES (?, ?, ?)");
             $stmt->bind_param("sss", $name, $email, $role);
             if ($stmt->execute())
-                $alert = "<div class='alert alert-success'>เพิ่มผู้ใช้งานเรียบร้อยแล้ว</div>";
+                $_SESSION['alert'] = "<div class='alert alert-success'>เพิ่มผู้ใช้งานเรียบร้อยแล้ว</div>";
         }
     }
-
+    header("Location: manage_users.php");
+    exit();
 }
 
 // Ban / Unban User
@@ -98,8 +99,13 @@ $staff_query = $conn->query("SELECT * FROM users WHERE role IN ('admin', 'staff'
     </button>
 </div>
 
-<?php if (isset($alert))
-    echo $alert; ?>
+<?php 
+if (isset($_SESSION['alert'])) {
+    echo $_SESSION['alert'];
+    unset($_SESSION['alert']);
+}
+if (isset($alert)) echo $alert; 
+?>
 
 <ul class="nav nav-tabs" id="userTabs" role="tablist">
     <li class="nav-item" role="presentation">

@@ -18,9 +18,19 @@ $userQ = $conn->prepare("SELECT id FROM users WHERE email = ?");
 $userQ->bind_param("s", $email);
 $userQ->execute();
 $res = $userQ->get_result();
-if ($res->num_rows == 0)
-    exit();
-$user_id = $res->fetch_assoc()['id'];
+
+if ($res->num_rows == 0) {
+    if ($email === 'guest') {
+        // Create a persistent guest user account behind the scenes to link stats
+        $createGuest = $conn->prepare("INSERT INTO users (google_id, email, display_name, role) VALUES ('guest_id', 'guest', 'Guest User', 'student')");
+        $createGuest->execute();
+        $user_id = $conn->insert_id;
+    } else {
+        exit();
+    }
+} else {
+    $user_id = $res->fetch_assoc()['id'];
+}
 
 // ALWAYS INSERT: We want a new row every time so the Stats Screen tracks the exact visit count
 $insertQ = $conn->prepare("INSERT INTO history (user_id, location_id, location_type) VALUES (?, ?, ?)");

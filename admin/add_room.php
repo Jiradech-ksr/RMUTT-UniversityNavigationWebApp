@@ -9,7 +9,7 @@ $message = "";
 // 1. FETCH BUILDINGS FOR DROPDOWN
 // We need this so the user can select "Building 1" or "Engineering" from a list
 $buildings = [];
-$sql = "SELECT id, name FROM buildings ORDER BY name ASC";
+$sql = "SELECT id, name_en as name FROM buildings ORDER BY name_en ASC";
 $result = $conn->query($sql);
 if ($result->num_rows > 0) {
     while ($row = $result->fetch_assoc()) {
@@ -50,7 +50,8 @@ function uploadFile($fileInputName, $subFolder, $base_url)
 
 // 3. HANDLE FORM SUBMISSION
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $name = $_POST['name'];
+    $name_en = $_POST['name_en'];
+    $name_th = $_POST['name_th'] ?? '';
     $room_num = $_POST['room_number'];
     $floor = $_POST['floor'];
     $building_id = $_POST['building_id'];
@@ -65,14 +66,19 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // Note: If you haven't added 'image_url' to your 'rooms' table yet, run this SQL:
     // ALTER TABLE rooms ADD COLUMN image_url VARCHAR(255);
 
-    $stmt = $conn->prepare("INSERT INTO rooms (name, room_number, floor, building_id, usage_type, image_url, floor_layout_url) VALUES (?, ?, ?, ?, ?, ?, ?)");
-    $stmt->bind_param("ssiisss", $name, $room_num, $floor, $building_id, $usage, $room_img_url, $layout_url);
+    $stmt = $conn->prepare("INSERT INTO rooms (name_en, name_th, room_number, floor, building_id, usage_type, image_url, floor_layout_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+    $stmt->bind_param("ssiisss", $name_en, $name_th, $room_num, $floor, $building_id, $usage, $room_img_url, $layout_url);
 
     if ($stmt->execute()) {
-        $message = "Room '$name' added successfully!";
+        header("Location: add_room.php?msg=" . urlencode("Room '$name' added successfully!"));
+        exit();
     } else {
         $message = "Error: " . $stmt->error;
     }
+}
+
+if (isset($_GET['msg'])) {
+    $message = htmlspecialchars($_GET['msg']);
 }
 ?>
 
@@ -115,8 +121,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label>Room Name (e.g. Computer Lab):</label>
-                            <input type="text" name="name" class="form-control" required>
+                            <label>Room Name (English):</label>
+                            <input type="text" name="name_en" class="form-control" required>
+                            
+                            <label class="mt-2">Room Name (ภาษาไทย):</label>
+                            <input type="text" name="name_th" class="form-control">
                         </div>
                         <div class="col-md-3 mb-3">
                             <label>Room Number:</label>

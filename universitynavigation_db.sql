@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Mar 06, 2026 at 09:20 AM
+-- Generation Time: Mar 11, 2026 at 11:25 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -29,7 +29,9 @@ SET time_zone = "+00:00";
 
 CREATE TABLE `buildings` (
   `id` int(11) NOT NULL,
-  `name` varchar(255) NOT NULL,
+  `name_en` varchar(255) DEFAULT NULL,
+  `name_th` varchar(255) DEFAULT NULL,
+  `faculty_name` varchar(100) NOT NULL DEFAULT 'General',
   `department_id` int(11) DEFAULT NULL,
   `latitude` decimal(10,8) NOT NULL,
   `longitude` decimal(11,8) NOT NULL,
@@ -42,10 +44,19 @@ CREATE TABLE `buildings` (
 -- Dumping data for table `buildings`
 --
 
-INSERT INTO `buildings` (`id`, `name`, `department_id`, `latitude`, `longitude`, `description`, `image_url`, `created_at`) VALUES
-(1, 'CPE Building', 1, 14.03589500, 100.72550500, NULL, 'https://example.com/cpe_building.jpg', '2025-12-04 04:22:17'),
-(2, 'Electrical', 2, 14.03625200, 100.72529600, NULL, 'https://example.com/ee_building.jpg', '2025-12-04 04:22:17'),
-(3, 'Business Center Tower', 4, 14.03500000, 100.72500000, NULL, 'https://example.com/business.jpg', '2025-12-04 04:22:17');
+INSERT INTO `buildings` (`id`, `name_en`, `name_th`, `faculty_name`, `department_id`, `latitude`, `longitude`, `description`, `image_url`, `created_at`) VALUES
+(1, 'Computer Engineering', 'อาคารปฏิบัติการวิศวกรรมคอมพิวเตอร์', 'General', 1, 14.03589300, 100.72550600, NULL, 'uploads/buildings/1773267822_Screenshot 2026-03-09 155103.png', '2025-12-04 04:22:17'),
+(2, 'department of electrical engineering', 'อาคารปฏิบัติการวิศวกรรมไฟฟ้า', 'General', 2, 14.03625200, 100.72529600, NULL, 'uploads/buildings/1773046170_ac4ac335-9e75-4be7-a91f-801498245e04.jpg', '2025-12-04 04:22:17'),
+(6, 'Department of Textile Engineer', NULL, 'General', NULL, 14.03815400, 100.72642200, NULL, 'uploads/buildings/1773045661_7ff35824-0bbc-47a5-80b8-8eaece17f0a8.jpg', '2026-03-09 08:41:01'),
+(7, 'OFFICE OF THE PRESIDENT', NULL, 'General', NULL, 14.03377700, 100.72911500, NULL, 'uploads/buildings/1773045723_b3ed6cb4-2609-45a8-922b-84f274a0f5dc.jpg', '2026-03-09 08:42:03'),
+(8, 'I-work (Helpdesk)', NULL, 'General', NULL, 14.03497600, 100.72552100, NULL, 'uploads/buildings/1773045896_3914fe52-512a-44a2-bfed-3406dd657cc6.jpg', '2026-03-09 08:44:56'),
+(9, 'Central Laboratory', NULL, 'General', NULL, 14.03862000, 100.72470800, NULL, 'uploads/buildings/1773045950_86a69c05-b259-4f6e-a68c-1f5de83457b9.jpg', '2026-03-09 08:45:50'),
+(10, 'Department of Aerospace Engineering', NULL, 'General', NULL, 14.03923100, 100.72473200, NULL, 'uploads/buildings/1773046023_38c971e3-3cd5-49f9-9b0d-ba2831d07627.jpg', '2026-03-09 08:47:03'),
+(11, 'Division of Student Development', NULL, 'General', NULL, 14.03637900, 100.72441300, NULL, 'uploads/buildings/1773046081_09f8ac83-bba6-4670-93a6-f5adf0bbc893.jpg', '2026-03-09 08:48:01'),
+(12, 'Faculty of Engineering Building (Multipurpose)', NULL, 'General', NULL, 14.03631700, 100.72613800, NULL, 'uploads/buildings/1773046467_ea3e820b-ce3e-40c1-b31a-825319ec34d2.jpg', '2026-03-09 08:54:27'),
+(13, 'Department of Electronics and Telecommunication Engineering', NULL, 'General', NULL, 14.03745400, 100.72612700, NULL, 'uploads/buildings/1773046581_154842bd-2d3e-4919-b5b9-6745d9b92888.jpg', '2026-03-09 08:56:21'),
+(14, 'Drama & Music', NULL, 'General', NULL, 14.03955800, 100.73086000, NULL, 'uploads/buildings/1773047005_96432328-6473-41cf-8dcc-3e98f5595569.jpg', '2026-03-09 09:03:25'),
+(17, 'Faculty of Architecture', NULL, 'General', NULL, 14.03846100, 100.73099000, NULL, 'uploads/buildings/1773047621_4f4da8c1-efd5-4606-b065-b01e302dea0a.jpg', '2026-03-09 09:13:41');
 
 -- --------------------------------------------------------
 
@@ -65,12 +76,12 @@ CREATE TABLE `departments` (
 --
 
 INSERT INTO `departments` (`id`, `name`, `created_at`, `faculty_id`) VALUES
-(1, 'Computer Engineering', '2025-12-04 04:22:17', 1),
-(2, 'Electrical Engineering', '2025-12-04 04:22:17', 1),
-(3, 'Civil Engineering', '2025-12-04 04:22:17', 1),
-(4, 'Marketing', '2025-12-04 04:22:17', 2),
-(5, 'Accounting', '2025-12-04 04:22:17', 2),
-(6, 'Interior Design', '2025-12-04 04:22:17', 3);
+(1, 'Computer Engineering', '2025-12-04 04:22:17', 2),
+(2, 'Electrical Engineering', '2025-12-04 04:22:17', 2),
+(3, 'Civil Engineering', '2025-12-04 04:22:17', 2),
+(4, 'Marketing', '2025-12-04 04:22:17', 3),
+(5, 'Accounting', '2025-12-04 04:22:17', 3),
+(6, 'Interior Design', '2025-12-04 04:22:17', 1);
 
 -- --------------------------------------------------------
 
@@ -89,9 +100,13 @@ CREATE TABLE `faculties` (
 --
 
 INSERT INTO `faculties` (`id`, `name`, `created_at`) VALUES
-(1, 'Faculty of Engineering', '2025-12-04 04:22:17'),
-(2, 'Faculty of Business Administration', '2025-12-04 04:22:17'),
-(3, 'Faculty of Architecture', '2025-12-04 04:22:17');
+(1, 'ส่วนกลาง (General)', '2026-03-09 09:55:54'),
+(2, 'คณะวิศวกรรมศาสตร์ (Engineering)', '2026-03-09 09:55:54'),
+(3, 'คณะบริหารธุรกิจ (Business)', '2026-03-09 09:55:54'),
+(4, 'คณะวิทยาศาสตร์และเทคโนโลยี (Science)', '2026-03-09 09:55:54'),
+(5, 'คณะศิลปกรรมศาสตร์ (Fine Arts)', '2026-03-09 09:55:54'),
+(6, 'คณะเทคโนโลยีการเกษตร (Agriculture)', '2026-03-09 09:55:54'),
+(7, 'คณะครุศาสตร์อุตสาหกรรม (Technical Education)', '2026-03-09 09:55:54');
 
 -- --------------------------------------------------------
 
@@ -144,7 +159,9 @@ INSERT INTO `history` (`id`, `user_id`, `location_id`, `location_type`, `visited
 (40, 4, 1, 'Room', '2026-03-06 06:51:49'),
 (41, 4, 1, 'Room', '2026-03-06 06:52:01'),
 (42, 4, 1, 'Room', '2026-03-06 06:52:02'),
-(43, 4, 1, 'Room', '2026-03-06 07:25:28');
+(43, 4, 1, 'Room', '2026-03-06 07:25:28'),
+(45, 3, 1, 'Building', '2026-03-09 09:12:37'),
+(47, 4, 6, 'Room', '2026-03-11 22:15:10');
 
 -- --------------------------------------------------------
 
@@ -170,7 +187,7 @@ CREATE TABLE `reports` (
 
 INSERT INTO `reports` (`id`, `user_id`, `room_id`, `issue_type`, `description`, `image_url`, `status`, `created_at`, `resolved_at`) VALUES
 (6, 3, 4, 'Fix Equipment', 'asd', 'uploads/reports/1772755461_34.jpg', 'resolved', '2026-03-06 00:04:21', '2026-03-06 07:04:39'),
-(7, 3, 1, 'Other', '???', 'uploads/reports/1772755513_34.jpg', 'pending', '2026-03-06 00:05:13', NULL);
+(7, 3, 1, 'Other', '???', 'uploads/reports/1772755513_34.jpg', 'resolved', '2026-03-06 00:05:13', '2026-03-08 19:03:06');
 
 -- --------------------------------------------------------
 
@@ -181,7 +198,8 @@ INSERT INTO `reports` (`id`, `user_id`, `room_id`, `issue_type`, `description`, 
 CREATE TABLE `rooms` (
   `id` int(11) NOT NULL,
   `building_id` int(11) NOT NULL,
-  `name` varchar(255) NOT NULL,
+  `name_en` varchar(255) DEFAULT NULL,
+  `name_th` varchar(255) DEFAULT NULL,
   `room_number` varchar(50) DEFAULT NULL,
   `floor` int(11) DEFAULT NULL,
   `usage_type` enum('Classroom','Office','Lab','Meeting Room','Other') DEFAULT NULL,
@@ -194,14 +212,16 @@ CREATE TABLE `rooms` (
 -- Dumping data for table `rooms`
 --
 
-INSERT INTO `rooms` (`id`, `building_id`, `name`, `room_number`, `floor`, `usage_type`, `floor_layout_url`, `created_at`, `image_url`) VALUES
-(1, 1, 'Computer Programming Lab', '16103', 1, 'Lab', 'uploads/layouts/1772666602_layout_Untitled Diagram.drawio.png', '2025-12-04 04:22:17', 'uploads/images/1772666602_img_1f6aa070-5c8c-4f6d-a500-6927ef028bf7 (1).jpg'),
-(2, 1, 'Lecture Room', '16105', 1, 'Lab', NULL, '2025-12-04 04:22:17', NULL),
-(4, 1, 'Instuctor Room', '16104', 1, 'Office', NULL, '2025-12-04 04:22:17', NULL),
-(6, 2, 'High Voltage Lab', '501', 1, 'Lab', NULL, '2025-12-04 04:22:17', NULL),
-(7, 2, 'Circuit Theory Room', '504', 2, 'Classroom', NULL, '2025-12-04 04:22:17', NULL),
-(8, 3, 'Grand Seminar Hall', '101', 1, 'Meeting Room', NULL, '2025-12-04 04:22:17', NULL),
-(9, 3, 'Marketing Class A', '202', 2, 'Classroom', NULL, '2025-12-04 04:22:17', NULL);
+INSERT INTO `rooms` (`id`, `building_id`, `name_en`, `name_th`, `room_number`, `floor`, `usage_type`, `floor_layout_url`, `created_at`, `image_url`) VALUES
+(1, 1, 'Computer Programming Lab', 'ห้องปฏิบัติการเขียนโปรแกรมคอมพิวเตอร์', '16103', 1, 'Lab', 'uploads/layouts/1772666602_layout_Untitled Diagram.drawio.png', '2025-12-04 04:22:17', 'uploads/images/1772666602_img_1f6aa070-5c8c-4f6d-a500-6927ef028bf7 (1).jpg'),
+(2, 1, 'Lecture Room', 'ห้องบรรยาย', '16105', 1, 'Lab', NULL, '2025-12-04 04:22:17', NULL),
+(4, 1, 'Instructor Room', 'ห้องพักอาจารย์', '16104', 1, 'Office', NULL, '2025-12-04 04:22:17', NULL),
+(6, 2, 'High Voltage Lab', 'ห้องปฏิบัติการไฟฟ้าแรงสูง', '501', 1, 'Lab', NULL, '2025-12-04 04:22:17', NULL),
+(7, 2, 'Circuit Theory Room', 'ห้องเรียนทฤษฎีวงจรไฟฟ้า', '504', 2, 'Classroom', NULL, '2025-12-04 04:22:17', NULL),
+(10, 12, 'Co-Working Space 1', NULL, '1', 1, NULL, NULL, '2026-03-09 08:57:56', 'uploads/images/1773046676_1c6e1d6e-9c4c-4829-ac3f-b2423c9d7cab.jpg'),
+(11, 12, 'Editorial Office of JERMUTT', 'สำนักงานวารสารวิศวกรรมศาสตร์ราชมงคลธัญบุรี', 'EN-01 105', 1, NULL, NULL, '2026-03-09 08:59:48', 'uploads/images/1773046788_6ece8c9f-5b53-4c7a-a4b0-55f2699e09f7.jpg'),
+(12, 12, 'Student Union Office', 'สำนักงานสโมสรนักศึกษา', 'EN-01 104', 1, NULL, NULL, '2026-03-09 09:00:51', 'uploads/images/1773046851_7ff8ed69-5767-4443-8399-0f0f80637959.jpg'),
+(13, 12, 'Co-Working Space 2', NULL, '2', 1, NULL, NULL, '2026-03-09 09:01:20', 'uploads/images/1773046880_145c4b56-f752-42da-900d-dcde70dfe5ae.jpg');
 
 -- --------------------------------------------------------
 
@@ -225,10 +245,11 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `google_id`, `email`, `display_name`, `created_at`, `photo_url`, `role`, `status`) VALUES
-(1, '109395742820228100954', 'jiradech.ksr@gmail.com', 'Jiradech', '2025-12-17 04:58:41', '', 'admin', 'active'),
+(1, '109395742820228100954', 'jiradech.ksr@gmail.com', 'Jiradech', '2025-12-17 04:58:41', 'https://lh3.googleusercontent.com/a/ACg8ocLwNhbaL9tTiOQ63Ky6WOVVB-xaFHZRbUhiHJLumywSz6zhdA=s96-c', 'admin', 'active'),
 (3, '102637320266923646699', 'jiraki002nd@gmail.com', 'Jiraki []', '2026-01-07 15:15:12', '', 'student', 'active'),
 (4, '100652209792208710272', 'jiraki001@gmail.com', 'jiraki [jiradech]', '2026-01-08 06:14:29', 'https://lh3.googleusercontent.com/a/ACg8ocKp089o4dZxZ3OIZVKNvpd7i6c_UunGZNUdD0rMp5qLdHYxfos', 'student', 'active'),
-(6, '', 'fah.thongkham@gmail.com', 'วนัชพร ทองคำ', '2026-03-04 14:15:52', NULL, 'staff', 'active');
+(6, '', 'fah.thongkham@gmail.com', 'วนัชพร ทองคำ', '2026-03-04 14:15:52', NULL, 'staff', 'active'),
+(8, '117193423119640302623', 'ingingl484@gmail.com', 'Phopiang Punpook', '2026-03-06 09:07:55', 'https://lh3.googleusercontent.com/a/ACg8ocIRdLdkeBDsdXF84JQrM9r7mC6K2WHrJJpyrqHIgc6DaVTNCDJmIw', 'staff', 'active');
 
 --
 -- Indexes for dumped tables
@@ -301,7 +322,7 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `buildings`
 --
 ALTER TABLE `buildings`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
 
 --
 -- AUTO_INCREMENT for table `departments`
@@ -313,7 +334,7 @@ ALTER TABLE `departments`
 -- AUTO_INCREMENT for table `faculties`
 --
 ALTER TABLE `faculties`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT for table `favorites`
@@ -325,7 +346,7 @@ ALTER TABLE `favorites`
 -- AUTO_INCREMENT for table `history`
 --
 ALTER TABLE `history`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=44;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=48;
 
 --
 -- AUTO_INCREMENT for table `reports`
@@ -337,13 +358,13 @@ ALTER TABLE `reports`
 -- AUTO_INCREMENT for table `rooms`
 --
 ALTER TABLE `rooms`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- Constraints for dumped tables

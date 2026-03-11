@@ -42,7 +42,7 @@ $total = $stmt->get_result()->fetch_assoc()['c'];
 $response['total_searches'] = $total;
 
 // 4. Get Top 5 Rooms
-$sql = "SELECT r.name, r.room_number, COUNT(h.id) as visit_count FROM history h JOIN rooms r ON h.location_id = r.id AND h.location_type = 'Room'
+$sql = "SELECT r.name_en as name, r.room_number, COUNT(h.id) as visit_count FROM history h JOIN rooms r ON h.location_id = r.id AND h.location_type = 'Room'
         WHERE h.user_id = ? 
         GROUP BY r.id 
         ORDER BY visit_count DESC 

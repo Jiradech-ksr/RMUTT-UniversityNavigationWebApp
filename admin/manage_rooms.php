@@ -36,10 +36,12 @@ if (isset($_POST['add_building'])) {
 
     if ($stmt->execute()) {
         if ($upload_error) {
-            $alert = "<div class='alert alert-warning'><i class='fas fa-exclamation-circle'></i> เพิ่มอาคารแล้ว $upload_error</div>";
+            $_SESSION['alert'] = "<div class='alert alert-warning'><i class='fas fa-exclamation-circle'></i> เพิ่มอาคารแล้ว $upload_error</div>";
         } else {
-            $alert = "<div class='alert alert-success'><i class='fas fa-check-circle'></i> เพิ่มอาคารเรียบร้อยแล้ว</div>";
+            $_SESSION['alert'] = "<div class='alert alert-success'><i class='fas fa-check-circle'></i> เพิ่มอาคารเรียบร้อยแล้ว</div>";
         }
+        header("Location: manage_rooms.php");
+        exit();
     } else {
         $alert = "<div class='alert alert-danger'><i class='fas fa-times-circle'></i> Error: " . htmlspecialchars($stmt->error) . "</div>";
     }
@@ -48,17 +50,21 @@ if (isset($_POST['add_building'])) {
 if (isset($_POST['add_room'])) {
     $building_id = (int) $_POST['building_id'];
     $room_number = $_POST['room_number'];
-    $room_name = $_POST['room_name'];
+    $room_name_en = $_POST['room_name_en'] ?? ''; // Added room_name_en
+    $room_name_th = $_POST['room_name_th'] ?? ''; // Added room_name_th
     $floor = $_POST['floor'];
 
-    $floor_layout_url = uploadFileSafely($_FILES['room_layout'], "layouts", "../");
+    // รูปภาพ (ไม่บังคับ)
     $image_url = uploadFileSafely($_FILES['room_image'], "images", "../");
+    $floor_layout_url = uploadFileSafely($_FILES['room_layout'], "layouts", "../");
 
-    $stmt = $conn->prepare("INSERT INTO rooms (building_id, room_number, name, floor, floor_layout_url, image_url) VALUES (?, ?, ?, ?, ?, ?)");
-    $stmt->bind_param("isssss", $building_id, $room_number, $room_name, $floor, $floor_layout_url, $image_url);
+    $stmt = $conn->prepare("INSERT INTO rooms (building_id, room_number, name_en, name_th, floor, floor_layout_url, image_url) VALUES (?, ?, ?, ?, ?, ?, ?)");
+    $stmt->bind_param("issssss", $building_id, $room_number, $room_name_en, $room_name_th, $floor, $floor_layout_url, $image_url);
 
     if ($stmt->execute()) {
-        $alert = "<div class='alert alert-success'><i class='fas fa-check-circle'></i> เพิ่มห้องเรียนและรูปภาพเรียบร้อยแล้ว</div>";
+        $_SESSION['alert'] = "<div class='alert alert-success'><i class='fas fa-check-circle'></i> เพิ่มห้องเรียนและรูปภาพเรียบร้อยแล้ว</div>";
+        header("Location: manage_rooms.php");
+        exit();
     } else {
         $alert = "<div class='alert alert-danger'><i class='fas fa-times-circle'></i> Error: " . htmlspecialchars($stmt->error) . "</div>";
     }
@@ -69,65 +75,70 @@ if (isset($_POST['add_room'])) {
 // ==========================================
 if (isset($_POST['edit_building'])) {
     $id = (int) $_POST['building_id'];
-    $name = $_POST['building_name'];
+    $name_en = $_POST['building_name_en'];
+    $name_th = $_POST['building_name_th'] ?? ''; // Added name_th
     $faculty_id = (int) $_POST['faculty_id'];
     $lat = !empty($_POST['latitude']) ? $_POST['latitude'] : null;
     $lng = !empty($_POST['longitude']) ? $_POST['longitude'] : null;
 
-    $stmt = $conn->prepare("UPDATE buildings SET name=?, latitude=?, longitude=? WHERE id=?");
-    $stmt->bind_param("sddi", $name, $lat, $lng, $id);
+    $stmt = $conn->prepare("UPDATE buildings SET name_en=?, name_th=?, department_id=?, latitude=?, longitude=? WHERE id=?");
+    $stmt->bind_param("ssiddi", $name_en, $name_th, $faculty_id, $lat, $lng, $id);
 
     if ($stmt->execute()) {
-        $alert = "<div class='alert alert-success'><i class='fas fa-check-circle'></i> แก้ไขข้อมูลอาคารเรียบร้อยแล้ว</div>";
+        // Update Building Image if a new one is uploaded
+        if (isset($_FILES['building_image']) && $_FILES['building_image']['error'] == 0) {
+            $image_url = uploadFileSafely($_FILES['building_image'], "buildings", "../");
+            if ($image_url) {
+                $stmt_img = $conn->prepare("UPDATE buildings SET image_url=? WHERE id=?");
+                $stmt_img->bind_param("si", $image_url, $id);
+                $stmt_img->execute();
+            }
+        }
+        $_SESSION['alert'] = "<div class='alert alert-success'><i class='fas fa-check-circle'></i> แก้ไขข้อมูลอาคารเรียบร้อยแล้ว</div>";
+        header("Location: manage_rooms.php");
+        exit();
     } else {
         $alert = "<div class='alert alert-danger'><i class='fas fa-times-circle'></i> Error: " . htmlspecialchars($stmt->error) . "</div>";
-    }
-
-    // Update Building Image if a new one is uploaded
-    if (isset($_FILES['building_image']) && $_FILES['building_image']['error'] == 0) {
-        $image_url = uploadFileSafely($_FILES['building_image'], "buildings", "../");
-        if ($image_url) {
-            $stmt_img = $conn->prepare("UPDATE buildings SET image_url=? WHERE id=?");
-            $stmt_img->bind_param("si", $image_url, $id);
-            $stmt_img->execute();
-        }
     }
 }
 
 if (isset($_POST['edit_room'])) {
     $id = (int) $_POST['room_id'];
     $room_number = $_POST['room_number'];
-    $room_name = $_POST['room_name'];
+    $room_name_en = $_POST['room_name_en'] ?? '';
+    $room_name_th = $_POST['room_name_th'] ?? '';
     $floor = $_POST['floor'];
 
     // อัปเดตข้อมูลทั่วไป
-    $stmt = $conn->prepare("UPDATE rooms SET room_number=?, name=?, floor=? WHERE id=?");
-    $stmt->bind_param("sssi", $room_number, $room_name, $floor, $id);
+    $stmt = $conn->prepare("UPDATE rooms SET room_number=?, name_en=?, name_th=?, floor=? WHERE id=?");
+    $stmt->bind_param("ssssi", $room_number, $room_name_en, $room_name_th, $floor, $id);
 
     if ($stmt->execute()) {
-        $alert = "<div class='alert alert-success'><i class='fas fa-check-circle'></i> แก้ไขข้อมูลห้องเรียนเรียบร้อยแล้ว</div>";
+        // 1. อัปเดตแผนผังห้อง (Layout)
+        if (isset($_FILES['room_layout']) && $_FILES['room_layout']['error'] == 0) {
+            $floor_layout_url = uploadFileSafely($_FILES['room_layout'], "layouts", "../");
+            if ($floor_layout_url) {
+                $stmt_ly = $conn->prepare("UPDATE rooms SET floor_layout_url=? WHERE id=?");
+                $stmt_ly->bind_param("si", $floor_layout_url, $id);
+                $stmt_ly->execute();
+            }
+        }
+
+        // 2. อัปเดตรูปภาพสถานที่จริง (Image)
+        if (isset($_FILES['room_image']) && $_FILES['room_image']['error'] == 0) {
+            $image_url = uploadFileSafely($_FILES['room_image'], "images", "../");
+            if ($image_url) {
+                $stmt_img = $conn->prepare("UPDATE rooms SET image_url=? WHERE id=?");
+                $stmt_img->bind_param("si", $image_url, $id);
+                $stmt_img->execute();
+            }
+        }
+        
+        $_SESSION['alert'] = "<div class='alert alert-success'><i class='fas fa-check-circle'></i> แก้ไขข้อมูลห้องเรียนเรียบร้อยแล้ว</div>";
+        header("Location: manage_rooms.php");
+        exit();
     } else {
         $alert = "<div class='alert alert-danger'><i class='fas fa-times-circle'></i> Error: " . htmlspecialchars($stmt->error) . "</div>";
-    }
-
-    // 1. อัปเดตแผนผังห้อง (Layout)
-    if (isset($_FILES['room_layout']) && $_FILES['room_layout']['error'] == 0) {
-        $floor_layout_url = uploadFileSafely($_FILES['room_layout'], "layouts", "../");
-        if ($floor_layout_url) {
-            $stmt_ly = $conn->prepare("UPDATE rooms SET floor_layout_url=? WHERE id=?");
-            $stmt_ly->bind_param("si", $floor_layout_url, $id);
-            $stmt_ly->execute();
-        }
-    }
-
-    // 2. อัปเดตรูปภาพสถานที่จริง (Image)
-    if (isset($_FILES['room_image']) && $_FILES['room_image']['error'] == 0) {
-        $image_url = uploadFileSafely($_FILES['room_image'], "images", "../");
-        if ($image_url) {
-            $stmt_img = $conn->prepare("UPDATE rooms SET image_url=? WHERE id=?");
-            $stmt_img->bind_param("si", $image_url, $id);
-            $stmt_img->execute();
-        }
     }
 }
 
@@ -169,8 +180,13 @@ $buildings = $conn->query("SELECT * FROM buildings ORDER BY name_en ASC"); ?>
     </button>
 </div>
 
-<?php if (isset($alert))
-    echo $alert; ?>
+<?php 
+if (isset($_SESSION['alert'])) {
+    echo $_SESSION['alert'];
+    unset($_SESSION['alert']);
+}
+if (isset($alert)) echo $alert; 
+?>
 
 <div class="accordion shadow-sm" id="buildingAccordion">
     <?php
@@ -200,8 +216,8 @@ $buildings = $conn->query("SELECT * FROM buildings ORDER BY name_en ASC"); ?>
                             </button>
                             <button class="btn btn-sm btn-warning me-2" data-bs-toggle="modal"
                                 data-bs-target="#editBuildingModal"
-                                onclick="editBuildingData(<?= $b_id; ?>, '<?= $b_name; ?>', '<?= $b_lat; ?>', '<?= $b_lng; ?>')">
-                                <i class="fas fa-edit"></i> แก้ไขอาคารพิกัด
+                                onclick="editBuildingData(<?= $b_id; ?>, '<?= htmlspecialchars($b['name_en'], ENT_QUOTES); ?>', '<?= htmlspecialchars($b['name_th'] ?? '', ENT_QUOTES); ?>', '<?= $b_lat; ?>', '<?= $b_lng; ?>')">
+                                <i class="fas fa-edit"></i> แก้ไขพิกัด/ข้อมูล
                             </button>
                             <a href="?delete_building=<?= $b_id; ?>" class="btn btn-sm btn-outline-danger"
                                 onclick="return confirm('ยืนยันการลบอาคารนี้ (ห้องทั้งหมดในอาคารจะถูกลบด้วย)?');">
@@ -221,12 +237,12 @@ $buildings = $conn->query("SELECT * FROM buildings ORDER BY name_en ASC"); ?>
                                 </thead>
                                 <tbody>
                                     <?php while ($r = $rooms->fetch_assoc()):
-                                        $r_name_safe = htmlspecialchars($r['name'], ENT_QUOTES);
+                                        $r_name_safe = htmlspecialchars($r['name_en'] ?? '', ENT_QUOTES);
                                         ?>
                                         <tr>
                                             <td class="px-3 fw-semi bold text-primary"><?= htmlspecialchars($r['room_number']); ?></td>
                                             <td>
-                                                <?= htmlspecialchars($r['name']); ?>
+                                                <?= htmlspecialchars($r['name_en'] ?? ''); ?>
                                                 <?php if (!empty($r['image_url']) || !empty($r['floor_layout_url'])): ?>
                                                     <span class="badge bg-info ms-2"><i class="fas fa-image"></i> มีรูปภาพ</span>
                                                 <?php endif; ?>
@@ -235,7 +251,7 @@ $buildings = $conn->query("SELECT * FROM buildings ORDER BY name_en ASC"); ?>
                                             <td class="text-end px-3">
                                                 <button class="btn btn-sm btn-warning py-0 me-1" data-bs-toggle="modal"
                                                     data-bs-target="#editRoomModal"
-                                                    onclick="editRoomData(<?= $r['id']; ?>, '<?= htmlspecialchars($r['room_number'], ENT_QUOTES); ?>', '<?= $r_name_safe; ?>', '<?= htmlspecialchars($r['floor'], ENT_QUOTES); ?>')">
+                                                    onclick="editRoomData(<?= $r['id']; ?>, '<?= htmlspecialchars($r['room_number'], ENT_QUOTES); ?>', '<?= htmlspecialchars($r['name_en'] ?? '', ENT_QUOTES); ?>', '<?= htmlspecialchars($r['name_th'] ?? '', ENT_QUOTES); ?>', '<?= htmlspecialchars($r['floor'], ENT_QUOTES); ?>')">
                                                     <i class="fas fa-edit"></i> แก้ไข
                                                 </button>
                                                 <a href="?delete_room=<?= $r['id']; ?>" class="btn btn-sm btn-danger py-0"
@@ -344,9 +360,13 @@ $buildings = $conn->query("SELECT * FROM buildings ORDER BY name_en ASC"); ?>
                         </div>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label fw-bold">ชื่อห้อง / รายละเอียด</label>
-                        <input type="text" name="room_name" class="form-control"
-                            placeholder="เช่น ห้องปฏิบัติการคอมพิวเตอร์">
+                        <label class="form-label fw-bold">ชื่อห้อง (English)</label>
+                        <input type="text" name="room_name_en" class="form-control"
+                            placeholder="เช่น Computer Programming Lab">
+                            
+                        <label class="form-label fw-bold mt-2">ชื่อห้อง (ภาษาไทย)</label>
+                        <input type="text" name="room_name_th" class="form-control"
+                            placeholder="เช่น ห้องปฏิบัติการเขียนโปรแกรมคอมพิวเตอร์">
                     </div>
 
                     <div class="mb-3 border rounded p-3 bg-light">
@@ -381,8 +401,10 @@ $buildings = $conn->query("SELECT * FROM buildings ORDER BY name_en ASC"); ?>
                 <div class="modal-body">
                     <input type="hidden" name="building_id" id="edit_building_id">
                     <div class="mb-3">
-                        <label class="form-label fw-bold">ชื่ออาคาร <span class="text-danger">*</span></label>
-                        <input type="text" name="building_name" id="edit_building_name" class="form-control" required>
+                        <label class="form-label fw-bold">ชื่ออาคาร (English) <span class="text-danger">*</span></label>
+                        <input type="text" name="building_name_en" id="edit_building_name_en" class="form-control" required>
+                        <label class="form-label fw-bold mt-2">ชื่ออาคาร (ภาษาไทย)</label>
+                        <input type="text" name="building_name_th" id="edit_building_name_th" class="form-control">
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-bold">คณะ / หน่วยงาน (Faculty) <span
@@ -449,8 +471,11 @@ $buildings = $conn->query("SELECT * FROM buildings ORDER BY name_en ASC"); ?>
                         </div>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label fw-bold">ชื่อห้อง / รายละเอียด</label>
-                        <input type="text" name="room_name" id="edit_room_name" class="form-control">
+                        <label class="form-label fw-bold">ชื่อห้อง (English)</label>
+                        <input type="text" name="room_name_en" id="edit_room_name_en" class="form-control">
+                        
+                        <label class="form-label fw-bold mt-2">ชื่อห้อง (ภาษาไทย)</label>
+                        <input type="text" name="room_name_th" id="edit_room_name_th" class="form-control">
                     </div>
 
                     <div class="mb-3 border rounded p-3 bg-light">
@@ -484,17 +509,19 @@ $buildings = $conn->query("SELECT * FROM buildings ORDER BY name_en ASC"); ?>
     }
 
     // --- การโยนข้อมูลเข้า Modal แก้ไขห้อง ---
-    function editRoomData(id, number, name, floor) {
+    function editRoomData(id, number, name_en, name_th, floor) {
         document.getElementById('edit_room_id').value = id;
         document.getElementById('edit_room_number').value = number;
-        document.getElementById('edit_room_name').value = name;
+        document.getElementById('edit_room_name_en').value = name_en;
+        document.getElementById('edit_room_name_th').value = name_th;
         document.getElementById('edit_room_floor').value = floor;
     }
 
     // --- การโยนข้อมูลเข้า Modal แก้ไขอาคาร ---
-    function editBuildingData(id, name, lat, lng) {
+    function editBuildingData(id, name_en, name_th, lat, lng) {
         document.getElementById('edit_building_id').value = id;
-        document.getElementById('edit_building_name').value = name;
+        document.getElementById('edit_building_name_en').value = name_en;
+        document.getElementById('edit_building_name_th').value = name_th;
         document.getElementById('edit_latInput').value = lat;
         document.getElementById('edit_lngInput').value = lng;
 

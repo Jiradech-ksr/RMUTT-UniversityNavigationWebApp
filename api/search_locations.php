@@ -12,6 +12,18 @@ $results = [];
 try {
     $search_term = '%' . $search_query . '%';
 
+    $baseDir = rtrim(str_replace('\\', '/', dirname(dirname($_SERVER['SCRIPT_NAME']))), '/');
+    
+    // Function to ensure URL is full
+    function makeFullUrl($path, $baseDir) {
+        if (empty($path)) return null;
+        if (strpos($path, 'http://') === 0 || strpos($path, 'https://') === 0) {
+            return $path;
+        }
+        $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https://" : "http://";
+        return $protocol . $_SERVER['HTTP_HOST'] . $baseDir . '/' . ltrim($path, '/');
+    }
+
     $sql = "
     SELECT 
         id, 
@@ -25,7 +37,8 @@ try {
         image_url, 
         NULL as floor_layout_url,
         name_en as building_name_en,
-        name_th as building_name_th
+        name_th as building_name_th,
+        image_url as building_image_url
     FROM buildings 
     WHERE name_en LIKE ? OR name_th LIKE ?
     
@@ -43,7 +56,8 @@ try {
         r.image_url, 
         r.floor_layout_url, 
         b.name_en as building_name_en,
-        b.name_th as building_name_th
+        b.name_th as building_name_th,
+        b.image_url as building_image_url
     FROM rooms r
     JOIN buildings b ON r.building_id = b.id
     WHERE r.name_en LIKE ? OR r.name_th LIKE ? OR r.room_number LIKE ?
@@ -55,6 +69,9 @@ try {
     $result = $stmt->get_result();
 
     while ($row = $result->fetch_assoc()) {
+        $row['image_url'] = makeFullUrl($row['image_url'], $baseDir);
+        $row['floor_layout_url'] = makeFullUrl($row['floor_layout_url'], $baseDir);
+        $row['building_image_url'] = makeFullUrl($row['building_image_url'], $baseDir);
         $results[] = $row;
     }
 

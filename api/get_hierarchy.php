@@ -21,14 +21,17 @@ function makeFullUrl($dbPath)
 
     $protocol = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? "https" : "http";
     $host = $_SERVER['HTTP_HOST'];
+    
+    // Get project root directory, handle nested path
+    $baseDir = rtrim(str_replace('\\', '/', dirname(dirname($_SERVER['SCRIPT_NAME']))), '/');
 
-    return $protocol . "://" . $host . "/" . ltrim($dbPath, '/');
+    return $protocol . "://" . $host . $baseDir . "/" . ltrim($dbPath, '/');
 }
 
 $hierarchy = [];
 
 // 2. Fetch Buildings
-$sql_buildings = "SELECT * FROM buildings ORDER BY name ASC";
+$sql_buildings = "SELECT * FROM buildings ORDER BY name_en ASC";
 $result_buildings = $conn->query($sql_buildings);
 
 if (!$result_buildings) {
@@ -74,6 +77,7 @@ if ($result_buildings->num_rows > 0) {
                     "lat" => $building['latitude'],
                     "lng" => $building['longitude'],
                     "image_url" => makeFullUrl($r_img),
+                    "building_image_url" => makeFullUrl($b_img),
                     "floor_layout_url" => makeFullUrl($r_layout)
                 ];
                 array_push($buildingNode['children'], $roomNode);
