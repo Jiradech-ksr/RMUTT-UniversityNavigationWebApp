@@ -53,7 +53,7 @@ try {
         b.longitude, 
         r.room_number, 
         r.floor,
-        r.image_url, 
+        (SELECT image_url FROM room_images WHERE room_id = r.id ORDER BY sort_order ASC LIMIT 1) as image_url, 
         r.floor_layout_url, 
         b.name_en as building_name_en,
         b.name_th as building_name_th,

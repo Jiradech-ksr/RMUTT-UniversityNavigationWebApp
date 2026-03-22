@@ -31,7 +31,7 @@ if ($userQ->get_result()->num_rows == 0) {
 
 $sql = "SELECT 
             h.id as history_id, h.visited_at, h.location_type as type, h.location_id,
-            r.id as r_id, r.name_en as r_name_en, r.name_th as r_name_th, r.room_number, r.floor, r.image_url as r_image, r.floor_layout_url,
+            r.id as r_id, r.name_en as r_name_en, r.name_th as r_name_th, r.room_number, r.floor, (SELECT image_url FROM room_images WHERE room_id = r.id ORDER BY sort_order ASC LIMIT 1) as r_image, r.floor_layout_url,
             b1.name_en as r_building_name_en, b1.name_th as r_building_name_th, b1.latitude as r_lat, b1.longitude as r_lng, b1.image_url as r_building_image,
             b2.id as b_id, b2.name_en as b_name_en, b2.name_th as b_name_th, b2.latitude as b_lat, b2.longitude as b_lng, b2.image_url as b_image
         FROM history h

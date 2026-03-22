@@ -6,18 +6,32 @@ $apiKey = $_ENV['GOOGLE_MAPS_API_KEY'];
 // 1. จัดการเพิ่มข้อมูล (Add Data)
 // ==========================================
 $dept_query = $conn->query("
-    SELECT d.id, d.name as dept_name, f.name as faculty_name
+    SELECT d.id, d.name_en as dept_name_en, d.name_th as dept_name_th, f.name_en as faculty_name_en, f.name_th as faculty_name_th
     FROM departments d
     LEFT JOIN faculties f ON f.id = d.faculty_id
-    ORDER BY f.name ASC, d.name ASC
+    ORDER BY f.name_en ASC, d.name_en ASC
 ");
 $departments_list = [];
 while ($row = $dept_query->fetch_assoc()) {
     $departments_list[] = $row;
 }
+$fac_query = $conn->query("SELECT * FROM faculties ORDER BY name_en ASC");
+$faculties_list = [];
+while ($row = $fac_query->fetch_assoc()) {
+    $faculties_list[] = $row;
+}
 
 if (isset($_POST['add_building'])) {
-    $department_id = !empty($_POST['department_id']) ? (int) $_POST['department_id'] : null;
+    $location_assign = $_POST['location_assign'] ?? '';
+    $department_id = null;
+    $faculty_id = null;
+    if (str_starts_with($location_assign, 'F_')) {
+        $faculty_id = (int)substr($location_assign, 2);
+    } elseif (str_starts_with($location_assign, 'D_')) {
+        $department_id = (int)substr($location_assign, 2);
+        $d_lookup = $conn->query("SELECT faculty_id FROM departments WHERE id = $department_id");
+        if ($d_lookup && $d_lookup->num_rows > 0) $faculty_id = (int)$d_lookup->fetch_assoc()['faculty_id'];
+    }
     $lat = !empty($_POST['latitude']) ? $_POST['latitude'] : null;
     $lng = !empty($_POST['longitude']) ? $_POST['longitude'] : null;
 
@@ -36,8 +50,8 @@ if (isset($_POST['add_building'])) {
     $responsible_email = trim($_POST['responsible_email'] ?? '');
     $responsible_email = $responsible_email ?: null;
 
-    $stmt = $conn->prepare("INSERT INTO buildings (name_en, name_th, department_id, latitude, longitude, image_url, responsible_email) VALUES (?, ?, ?, ?, ?, ?, ?)");
-    $stmt->bind_param("ssiddss", $name_en, $name_th, $department_id, $lat, $lng, $image_url, $responsible_email);
+    $stmt = $conn->prepare("INSERT INTO buildings (name_en, name_th, department_id, faculty_id, latitude, longitude, image_url, responsible_email) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+    $stmt->bind_param("ssiiddss", $name_en, $name_th, $department_id, $faculty_id, $lat, $lng, $image_url, $responsible_email);
 
     if ($stmt->execute()) {
         if ($upload_error) {
@@ -111,14 +125,23 @@ if (isset($_POST['edit_building'])) {
     $id = (int) $_POST['building_id'];
     $name_en = $_POST['building_name_en'];
     $name_th = $_POST['building_name_th'] ?? '';
-    $department_id = !empty($_POST['department_id']) ? (int) $_POST['department_id'] : null;
+    $location_assign = $_POST['location_assign'] ?? '';
+    $department_id = null;
+    $faculty_id = null;
+    if (str_starts_with($location_assign, 'F_')) {
+        $faculty_id = (int)substr($location_assign, 2);
+    } elseif (str_starts_with($location_assign, 'D_')) {
+        $department_id = (int)substr($location_assign, 2);
+        $d_lookup = $conn->query("SELECT faculty_id FROM departments WHERE id = $department_id");
+        if ($d_lookup && $d_lookup->num_rows > 0) $faculty_id = (int)$d_lookup->fetch_assoc()['faculty_id'];
+    }
     $lat = !empty($_POST['latitude']) ? $_POST['latitude'] : null;
     $lng = !empty($_POST['longitude']) ? $_POST['longitude'] : null;
     $responsible_email = trim($_POST['responsible_email'] ?? '');
     $responsible_email = $responsible_email ?: null;
 
-    $stmt = $conn->prepare("UPDATE buildings SET name_en=?, name_th=?, department_id=?, latitude=?, longitude=?, responsible_email=? WHERE id=?");
-    $stmt->bind_param("ssiddsi", $name_en, $name_th, $department_id, $lat, $lng, $responsible_email, $id);
+    $stmt = $conn->prepare("UPDATE buildings SET name_en=?, name_th=?, department_id=?, faculty_id=?, latitude=?, longitude=?, responsible_email=? WHERE id=?");
+    $stmt->bind_param("ssiiddsi", $name_en, $name_th, $department_id, $faculty_id, $lat, $lng, $responsible_email, $id);
 
     if ($stmt->execute()) {
         // Update Building Image if a new one is uploaded
@@ -241,7 +264,7 @@ if (isset($_GET['delete_building'])) {
 }
 
 // Fetch all faculties for the tree
-$faculties_tree = $conn->query("SELECT * FROM faculties ORDER BY name ASC"); ?>
+$faculties_tree = $conn->query("SELECT * FROM faculties ORDER BY name_en ASC"); ?>
 
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
     <h3 class="text-dark mb-0"><i class="fas fa-sitemap text-primary me-2"></i> จัดการอาคารและห้องเรียน (ตามโครงสร้าง)
@@ -265,11 +288,10 @@ if (isset($alert))
     <?php if ($faculties_tree && $faculties_tree->num_rows > 0):
         while ($faculty = $faculties_tree->fetch_assoc()):
             $fid = (int) $faculty['id'];
-            $faculty_name_safe = htmlspecialchars($faculty['name']);
+            $faculty_name_safe = htmlspecialchars($faculty['name_th'] . ' / ' . $faculty['name_en']);
             $total_bldg = $conn->query("
-            SELECT COUNT(b.id) as cnt FROM buildings b
-            JOIN departments d ON d.id = b.department_id
-            WHERE d.faculty_id = $fid
+            SELECT COUNT(id) as cnt FROM buildings 
+            WHERE faculty_id = $fid
         ")->fetch_assoc()['cnt'];
             ?>
             <!-- LEVEL 1: FACULTY -->
@@ -286,11 +308,11 @@ if (isset($alert))
                     <div class="accordion-body ps-4 pt-2 pb-2 bg-white">
 
                         <?php
-                        $depts = $conn->query("SELECT * FROM departments WHERE faculty_id = $fid ORDER BY name ASC");
+                        $depts = $conn->query("SELECT * FROM departments WHERE faculty_id = $fid ORDER BY name_en ASC");
                         if ($depts && $depts->num_rows > 0):
                             while ($dept = $depts->fetch_assoc()):
                                 $did = (int) $dept['id'];
-                                $dept_name_safe = htmlspecialchars($dept['name']);
+                                $dept_name_safe = htmlspecialchars($dept['name_th'] . ' / ' . $dept['name_en']);
                                 $dept_bldgs_count = $conn->query("SELECT COUNT(*) as cnt FROM buildings WHERE department_id = $did")->fetch_assoc()['cnt'];
                                 ?>
                                 <!-- LEVEL 2: DEPARTMENT -->
@@ -346,7 +368,7 @@ if (isset($alert))
                                                                             </button>
                                                                             <button class="btn btn-sm btn-warning me-2" data-bs-toggle="modal"
                                                                                 data-bs-target="#editBuildingModal"
-                                                                                onclick="editBuildingData(<?= $b_id ?>, '<?= htmlspecialchars($b['name_en'], ENT_QUOTES) ?>', '<?= htmlspecialchars($b['name_th'] ?? '', ENT_QUOTES) ?>', '<?= $b_lat ?>', '<?= $b_lng ?>', <?= $did ?>, '<?= htmlspecialchars($b['responsible_email'] ?? '', ENT_QUOTES) ?>')">
+                                                                                onclick="editBuildingData(<?= $b_id ?>, '<?= htmlspecialchars($b['name_en'], ENT_QUOTES) ?>', '<?= htmlspecialchars($b['name_th'] ?? '', ENT_QUOTES) ?>', '<?= $b_lat ?>', '<?= $b_lng ?>', 'D_<?= $did ?>', '<?= htmlspecialchars($b['responsible_email'] ?? '', ENT_QUOTES) ?>')">
                                                                                 <i class="fas fa-edit"></i> แก้ไขพิกัด/ข้อมูล
                                                                             </button>
                                                                             <a href="?delete_building=<?= $b_id ?>"
@@ -423,6 +445,57 @@ if (isset($alert))
                             <p class="text-muted text-center py-3">ยังไม่มีภาควิชาในคณะนี้</p>
                         <?php endif; ?>
 
+                        <?php
+                        $direct_bldgs = $conn->query("SELECT * FROM buildings WHERE faculty_id = $fid AND department_id IS NULL ORDER BY name_en ASC");
+                        if ($direct_bldgs && $direct_bldgs->num_rows > 0):
+                        ?>
+                            <div class="mt-3 mb-2 border-bottom pb-1">
+                                <strong class="text-success"><i class="fas fa-building"></i> อาคารสังกัดคณะโดยตรง (<?= $direct_bldgs->num_rows ?>)</strong>
+                            </div>
+                        <?php
+                            while ($b = $direct_bldgs->fetch_assoc()):
+                                $b_id = (int) $b['id'];
+                                $b_name = htmlspecialchars($b['name_en'], ENT_QUOTES);
+                                $b_lat = $b['latitude'] ?? '';
+                                $b_lng = $b['longitude'] ?? '';
+                                $rooms = $conn->query("SELECT * FROM rooms WHERE building_id = $b_id ORDER BY floor ASC, room_number ASC");
+                        ?>
+                        <div class="accordion mb-1" id="bldg-ac-direct-<?= $b_id ?>">
+                            <div class="accordion-item border-0 border-bottom rounded">
+                                <h2 class="accordion-header" id="bldg-h-direct-<?= $b_id ?>">
+                                    <button class="accordion-button collapsed fw-semi bold text-indigo"
+                                        style="background-color:#e8f5e9;" type="button"
+                                        data-bs-toggle="collapse" data-bs-target="#bldg-c-direct-<?= $b_id ?>">
+                                        <i class="fas fa-map-marker-alt me-2 text-success"></i>
+                                        <?= htmlspecialchars($b['name_en']) ?>
+                                        <span class="badge bg-secondary ms-3"><?= $rooms->num_rows ?> ห้อง</span>
+                                    </button>
+                                </h2>
+                                <div id="bldg-c-direct-<?= $b_id ?>" class="accordion-collapse collapse">
+                                    <div class="accordion-body bg-white">
+                                        <div class="d-flex justify-content-end mb-3">
+                                            <button class="btn btn-sm btn-success me-2" data-bs-toggle="modal"
+                                                data-bs-target="#addRoomModal"
+                                                onclick="setRoomModalData(<?= $b_id ?>, '<?= $b_name ?>')">
+                                                <i class="fas fa-plus"></i> เพิ่มห้อง
+                                            </button>
+                                            <button class="btn btn-sm btn-warning me-2" data-bs-toggle="modal"
+                                                data-bs-target="#editBuildingModal"
+                                                onclick="editBuildingData(<?= $b_id ?>, '<?= htmlspecialchars($b['name_en'], ENT_QUOTES) ?>', '<?= htmlspecialchars($b['name_th'] ?? '', ENT_QUOTES) ?>', '<?= $b_lat ?>', '<?= $b_lng ?>', 'F_<?= $fid ?>', '<?= htmlspecialchars($b['responsible_email'] ?? '', ENT_QUOTES) ?>')">
+                                                <i class="fas fa-edit"></i> แก้ไขข้อมูล
+                                            </button>
+                                            <a href="?delete_building=<?= $b_id ?>"
+                                                class="btn btn-sm btn-outline-danger"
+                                                onclick="return confirm('ยืนยันลบอาคาร?');">
+                                                <i class="fas fa-trash"></i> ลบอาคาร
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <?php endwhile; endif; ?>
+
                     </div>
                 </div>
             </div>
@@ -434,13 +507,13 @@ if (isset($alert))
     <?php endif; ?>
 </div>
 
-<!-- Buildings not yet assigned to a department -->
+<!-- Buildings not yet assigned to a department or faculty -->
 <?php
-$unassigned = $conn->query("SELECT * FROM buildings WHERE department_id IS NULL ORDER BY name_en ASC");
+$unassigned = $conn->query("SELECT * FROM buildings WHERE department_id IS NULL AND faculty_id IS NULL ORDER BY name_en ASC");
 if ($unassigned && $unassigned->num_rows > 0): ?>
     <div class="alert alert-warning shadow-sm mt-3 mb-1">
         <i class="fas fa-exclamation-triangle me-2"></i>
-        <strong>อาคารที่ยังไม่ระบุภาควิชา (<?= $unassigned->num_rows ?> อาคาร)</strong> — คลิกแก้ไขเพื่อกำหนดภาควิชา
+        <strong>อาคารที่ยังไม่ระบุสังกัด (<?= $unassigned->num_rows ?> อาคาร)</strong> — คลิกแก้ไขเพื่อกำหนดสังกัด
     </div>
     <div class="accordion shadow-sm mb-3" id="unassignedAccordion">
         <?php while ($b = $unassigned->fetch_assoc()):
@@ -468,8 +541,8 @@ if ($unassigned && $unassigned->num_rows > 0): ?>
                             </button>
                             <button class="btn btn-sm btn-warning me-2" data-bs-toggle="modal"
                                 data-bs-target="#editBuildingModal"
-                                onclick="editBuildingData(<?= $b_id ?>, '<?= htmlspecialchars($b['name_en'], ENT_QUOTES) ?>', '<?= htmlspecialchars($b['name_th'] ?? '', ENT_QUOTES) ?>', '<?= $b_lat ?>', '<?= $b_lng ?>', 0)">
-                                <i class="fas fa-edit"></i> กำหนดภาควิชา
+                                onclick="editBuildingData(<?= $b_id ?>, '<?= htmlspecialchars($b['name_en'], ENT_QUOTES) ?>', '<?= htmlspecialchars($b['name_th'] ?? '', ENT_QUOTES) ?>', '<?= $b_lat ?>', '<?= $b_lng ?>', '', '<?= htmlspecialchars($b['responsible_email'] ?? '', ENT_QUOTES) ?>')">
+                                <i class="fas fa-edit"></i> กำหนดสังกัด
                             </button>
                             <a href="?delete_building=<?= $b_id ?>" class="btn btn-sm btn-outline-danger"
                                 onclick="return confirm('ยืนยันการลบอาคารนี้?');">
@@ -542,13 +615,22 @@ if ($unassigned && $unassigned->num_rows > 0): ?>
                     <div class="mb-3">
                         <label class="form-label fw-bold">ภาควิชา / สำนัก (Department) <span
                                 class="text-danger">*</span></label>
-                        <select name="department_id" class="form-select" required>
-                            <option value="">-- เลือกภาควิชา --</option>
-                            <?php foreach ($departments_list as $dept): ?>
-                                <option value="<?= $dept['id']; ?>">
-                                    <?= htmlspecialchars($dept['faculty_name'] . ' › ' . $dept['dept_name']); ?>
-                                </option>
-                            <?php endforeach; ?>
+                        <select name="location_assign" class="form-select" required>
+                            <option value="">-- เลือกภาควิชาหรือสังกัด --</option>
+                            <optgroup label="ระดับคณะ (สังกัดคณะโดยตรง)">
+                                <?php foreach ($faculties_list as $fac): ?>
+                                    <option value="F_<?= $fac['id']; ?>">
+                                        <?= htmlspecialchars($fac['name_th'] . ' / ' . $fac['name_en']); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </optgroup>
+                            <optgroup label="ระดับภาควิชา (สังกัดย่อย)">
+                                <?php foreach ($departments_list as $dept): ?>
+                                    <option value="D_<?= $dept['id']; ?>">
+                                        <?= htmlspecialchars($dept['faculty_name_th'] . ' › ' . $dept['dept_name_th']); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </optgroup>
                         </select>
                     </div>
                     <div class="mb-3 border rounded p-3 bg-light">
@@ -673,13 +755,22 @@ if ($unassigned && $unassigned->num_rows > 0): ?>
                     <div class="mb-3">
                         <label class="form-label fw-bold">ภาควิชา / สำนัก (Department) <span
                                 class="text-danger">*</span></label>
-                        <select name="department_id" id="edit_department_id" class="form-select" required>
-                            <option value="">-- เลือกภาควิชา --</option>
-                            <?php foreach ($departments_list as $dept): ?>
-                                <option value="<?= $dept['id']; ?>">
-                                    <?= htmlspecialchars($dept['faculty_name'] . ' › ' . $dept['dept_name']); ?>
-                                </option>
-                            <?php endforeach; ?>
+                        <select name="location_assign" id="edit_department_id" class="form-select" required>
+                            <option value="">-- เลือกภาควิชาหรือสังกัด --</option>
+                            <optgroup label="ระดับคณะ (สังกัดคณะโดยตรง)">
+                                <?php foreach ($faculties_list as $fac): ?>
+                                    <option value="F_<?= $fac['id']; ?>">
+                                        <?= htmlspecialchars($fac['name_th'] . ' / ' . $fac['name_en']); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </optgroup>
+                            <optgroup label="ระดับภาควิชา (สังกัดย่อย)">
+                                <?php foreach ($departments_list as $dept): ?>
+                                    <option value="D_<?= $dept['id']; ?>">
+                                        <?= htmlspecialchars($dept['faculty_name_th'] . ' › ' . $dept['dept_name_th']); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </optgroup>
                         </select>
                     </div>
                     <div class="mb-3 border rounded p-3 bg-light">

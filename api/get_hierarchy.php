@@ -21,7 +21,7 @@ function makeFullUrl($dbPath)
 $result = [];
 
 // 1. Fetch all Faculties
-$sql_faculties = "SELECT * FROM faculties ORDER BY name ASC";
+$sql_faculties = "SELECT * FROM faculties ORDER BY name_en ASC";
 $res_faculties = $conn->query($sql_faculties);
 if (!$res_faculties) {
     die(json_encode(["error" => "Faculty Query Failed: " . $conn->error]));
@@ -30,22 +30,22 @@ if (!$res_faculties) {
 while ($faculty = $res_faculties->fetch_assoc()) {
     $facultyNode = [
         "id"       => $faculty['id'],
-        "title_en" => $faculty['name'],
-        "title_th" => $faculty['name'],
+        "title_en" => $faculty['name_en'],
+        "title_th" => $faculty['name_th'],
         "type"     => "faculty",
         "children" => []
     ];
 
     // 2. Fetch Departments under this Faculty
     $fid = (int)$faculty['id'];
-    $res_depts = $conn->query("SELECT * FROM departments WHERE faculty_id = $fid ORDER BY name ASC");
+    $res_depts = $conn->query("SELECT * FROM departments WHERE faculty_id = $fid ORDER BY name_en ASC");
 
     if ($res_depts) {
         while ($dept = $res_depts->fetch_assoc()) {
             $deptNode = [
                 "id"       => $dept['id'],
-                "title_en" => $dept['name'],
-                "title_th" => $dept['name'],
+                "title_en" => $dept['name_en'],
+                "title_th" => $dept['name_th'],
                 "type"     => "department",
                 "children" => []
             ];
@@ -75,7 +75,7 @@ while ($faculty = $res_faculties->fetch_assoc()) {
                     // 4. Fetch Rooms under this Building
                     $bid = (int)$building['id'];
                     $res_rooms = $conn->query(
-                        "SELECT * FROM rooms WHERE building_id = $bid ORDER BY room_number ASC"
+                        "SELECT rooms.*, (SELECT image_url FROM room_images WHERE room_id = rooms.id ORDER BY sort_order ASC LIMIT 1) as image_url FROM rooms WHERE building_id = $bid ORDER BY room_number ASC"
                     );
 
                     if ($res_rooms) {
@@ -110,9 +110,60 @@ while ($faculty = $res_faculties->fetch_assoc()) {
         }
     }
 
-    // Also fetch buildings with NO department_id under this faculty
-    // (legacy / unassigned — omit so UI stays clean)
+    // Fetch buildings with NO department_id under this faculty (standalone)
+    $res_direct_buildings = $conn->query(
+        "SELECT * FROM buildings WHERE faculty_id = $fid AND department_id IS NULL ORDER BY name_en ASC"
+    );
 
+    if ($res_direct_buildings) {
+        while ($building = $res_direct_buildings->fetch_assoc()) {
+            $b_img = $building['image_url'] ?? null;
+
+            $buildingNode = [
+                "id"                 => $building['id'],
+                "title_en"           => $building['name_en'],
+                "title_th"           => $building['name_th'],
+                "type"               => "building",
+                "lat"                => $building['latitude'],
+                "lng"                => $building['longitude'],
+                "image_url"          => makeFullUrl($b_img),
+                "responsible_email"  => $building['responsible_email'] ?? null,
+                "children"           => []
+            ];
+
+            // Fetch Rooms under this direct Building
+            $bid = (int)$building['id'];
+            $res_rooms = $conn->query(
+                "SELECT rooms.*, (SELECT image_url FROM room_images WHERE room_id = rooms.id ORDER BY sort_order ASC LIMIT 1) as image_url FROM rooms WHERE building_id = $bid ORDER BY room_number ASC"
+            );
+
+            if ($res_rooms) {
+                while ($room = $res_rooms->fetch_assoc()) {
+                    $r_img    = $room['image_url'] ?? null;
+                    $r_layout = $room['floor_layout_url'] ?? null;
+
+                    $roomNode = [
+                        "id"                 => $room['id'],
+                        "title_en"           => $room['name_en'],
+                        "title_th"           => $room['name_th'],
+                        "room_number"        => $room['room_number'],
+                        "floor"              => $room['floor'],
+                        "details"            => $room['details'] ?? null,
+                        "responsible_email"  => $building['responsible_email'] ?? null,
+                        "type"               => "room",
+                        "lat"                => $building['latitude'],
+                        "lng"                => $building['longitude'],
+                        "image_url"          => makeFullUrl($r_img),
+                        "building_image_url" => makeFullUrl($b_img),
+                        "floor_layout_url"   => makeFullUrl($r_layout)
+                    ];
+                    array_push($buildingNode['children'], $roomNode);
+                }
+            }
+
+            array_push($facultyNode['children'], $buildingNode);
+        }
+    }
     array_push($result, $facultyNode);
 }
 

@@ -9,19 +9,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // --- FACULTY ---
     if ($action === 'add_faculty') {
-        $name = trim($_POST['name']);
-        if ($name) {
-            $stmt = $conn->prepare("INSERT INTO faculties (name) VALUES (?)");
-            $stmt->bind_param("s", $name);
+        $name_en = trim($_POST['name_en']);
+        $name_th = trim($_POST['name_th']);
+        if ($name_en && $name_th) {
+            $stmt = $conn->prepare("INSERT INTO faculties (name_en, name_th) VALUES (?, ?)");
+            $stmt->bind_param("ss", $name_en, $name_th);
             $stmt->execute();
         }
         header("Location: manage_faculties.php?msg_ok=เพิ่มคณะสำเร็จ"); exit();
 
     } elseif ($action === 'edit_faculty') {
         $id   = (int)$_POST['id'];
-        $name = trim($_POST['name']);
-        $stmt = $conn->prepare("UPDATE faculties SET name = ? WHERE id = ?");
-        $stmt->bind_param("si", $name, $id);
+        $name_en = trim($_POST['name_en']);
+        $name_th = trim($_POST['name_th']);
+        $stmt = $conn->prepare("UPDATE faculties SET name_en = ?, name_th = ? WHERE id = ?");
+        $stmt->bind_param("ssi", $name_en, $name_th, $id);
         $stmt->execute();
         header("Location: manage_faculties.php?msg_ok=แก้ไขคณะสำเร็จ"); exit();
 
@@ -41,10 +43,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // --- DEPARTMENT ---
     } elseif ($action === 'add_dept') {
         $faculty_id = (int)$_POST['faculty_id'];
-        $name       = trim($_POST['name']);
-        if ($name && $faculty_id) {
-            $stmt = $conn->prepare("INSERT INTO departments (name, faculty_id) VALUES (?, ?)");
-            $stmt->bind_param("si", $name, $faculty_id);
+        $name_en    = trim($_POST['name_en']);
+        $name_th    = trim($_POST['name_th']);
+        if ($name_en && $name_th && $faculty_id) {
+            $stmt = $conn->prepare("INSERT INTO departments (name_en, name_th, faculty_id) VALUES (?, ?, ?)");
+            $stmt->bind_param("ssi", $name_en, $name_th, $faculty_id);
             $stmt->execute();
         }
         header("Location: manage_faculties.php?open_fac=$faculty_id&msg_ok=เพิ่มภาควิชาสำเร็จ"); exit();
@@ -52,9 +55,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif ($action === 'edit_dept') {
         $id         = (int)$_POST['id'];
         $faculty_id = (int)$_POST['faculty_id'];
-        $name       = trim($_POST['name']);
-        $stmt = $conn->prepare("UPDATE departments SET name = ?, faculty_id = ? WHERE id = ?");
-        $stmt->bind_param("sii", $name, $faculty_id, $id);
+        $name_en    = trim($_POST['name_en']);
+        $name_th    = trim($_POST['name_th']);
+        $stmt = $conn->prepare("UPDATE departments SET name_en = ?, name_th = ?, faculty_id = ? WHERE id = ?");
+        $stmt->bind_param("ssii", $name_en, $name_th, $faculty_id, $id);
         $stmt->execute();
         header("Location: manage_faculties.php?open_fac=$faculty_id&msg_ok=แก้ไขภาควิชาสำเร็จ"); exit();
 
@@ -79,9 +83,9 @@ $open_fac = isset($_GET['open_fac']) ? (int)$_GET['open_fac'] : 0;
 if (isset($_SESSION['alert'])) { $alert_html = $_SESSION['alert']; unset($_SESSION['alert']); }
 
 // Fetch all faculties
-$faculties = $conn->query("SELECT * FROM faculties ORDER BY name ASC");
+$faculties = $conn->query("SELECT * FROM faculties ORDER BY name_en ASC");
 // Fetch all faculties for dropdowns in dept edit modal
-$fac_list = $conn->query("SELECT id, name FROM faculties ORDER BY name ASC");
+$fac_list = $conn->query("SELECT id, name_en, name_th FROM faculties ORDER BY name_en ASC");
 $fac_dropdown = [];
 while ($fr = $fac_list->fetch_assoc()) $fac_dropdown[] = $fr;
 ?>
@@ -110,7 +114,7 @@ while ($fr = $fac_list->fetch_assoc()) $fac_dropdown[] = $fr;
 <?php if ($faculties && $faculties->num_rows > 0):
     while ($f = $faculties->fetch_assoc()):
         $fid = (int)$f['id'];
-        $depts = $conn->query("SELECT * FROM departments WHERE faculty_id = $fid ORDER BY name ASC");
+        $depts = $conn->query("SELECT * FROM departments WHERE faculty_id = $fid ORDER BY name_en ASC");
         $dept_count = $depts->num_rows;
         $should_open = ($open_fac === $fid) ? '' : 'collapsed';
         $should_show = ($open_fac === $fid) ? 'show' : '';
@@ -122,7 +126,7 @@ while ($fr = $fac_list->fetch_assoc()) $fac_dropdown[] = $fr;
                     style="background-color:#f0f0f8;"
                     type="button" data-bs-toggle="collapse" data-bs-target="#fac-c<?= $fid ?>">
                 <i class="fas fa-university me-2 text-primary"></i>
-                <?= htmlspecialchars($f['name']) ?>
+                <?= htmlspecialchars($f['name_th']) ?> / <?= htmlspecialchars($f['name_en']) ?>
                 <span class="badge bg-primary ms-3"><?= $dept_count ?> ภาควิชา</span>
             </button>
         </h2>
@@ -134,16 +138,16 @@ while ($fr = $fac_list->fetch_assoc()) $fac_dropdown[] = $fr;
                 <div class="d-flex gap-2 mb-3">
                     <button class="btn btn-sm btn-success"
                             data-bs-toggle="modal" data-bs-target="#addDeptModal"
-                            onclick="setAddDeptFaculty(<?= $fid ?>, '<?= htmlspecialchars($f['name'], ENT_QUOTES) ?>')">
+                            onclick="setAddDeptFaculty(<?= $fid ?>, '<?= htmlspecialchars($f['name_th'], ENT_QUOTES) ?>')">
                         <i class="fas fa-plus me-1"></i> เพิ่มภาควิชาในคณะนี้
                     </button>
                     <button class="btn btn-sm btn-warning"
                             data-bs-toggle="modal" data-bs-target="#editFacultyModal"
-                            onclick="setEditFaculty(<?= $fid ?>, '<?= htmlspecialchars($f['name'], ENT_QUOTES) ?>')">
+                            onclick="setEditFaculty(<?= $fid ?>, '<?= htmlspecialchars($f['name_en'], ENT_QUOTES) ?>', '<?= htmlspecialchars($f['name_th'], ENT_QUOTES) ?>')">
                         <i class="fas fa-edit me-1"></i> แก้ไขชื่อคณะ
                     </button>
                     <form method="POST" class="d-inline"
-                          onsubmit="return confirm('ยืนยันลบคณะ \"<?= htmlspecialchars($f['name'], ENT_QUOTES) ?>\"?\n(ต้องลบภาควิชาทั้งหมดภายในก่อน)')">
+                          onsubmit="return confirm('ยืนยันลบคณะ &quot;<?= htmlspecialchars($f['name_th'], ENT_QUOTES) ?>&quot;?\n(ต้องลบภาควิชาทั้งหมดภายในก่อน)')">
                         <input type="hidden" name="action" value="delete_faculty">
                         <input type="hidden" name="id" value="<?= $fid ?>">
                         <button type="submit" class="btn btn-sm btn-outline-danger">
@@ -165,7 +169,7 @@ while ($fr = $fac_list->fetch_assoc()) $fac_dropdown[] = $fr;
                                     style="background-color:#f8f9fc;"
                                     type="button" data-bs-toggle="collapse" data-bs-target="#dept-c<?= $did ?>">
                                 <i class="fas fa-sitemap me-2 text-secondary"></i>
-                                <?= htmlspecialchars($d['name']) ?>
+                                <?= htmlspecialchars($d['name_th']) ?> / <?= htmlspecialchars($d['name_en']) ?>
                                 <span class="badge bg-secondary ms-3"><?= $bldg_count ?> อาคาร</span>
                             </button>
                         </h2>
@@ -174,11 +178,11 @@ while ($fr = $fac_list->fetch_assoc()) $fac_dropdown[] = $fr;
                                 <div class="d-flex gap-2">
                                     <button class="btn btn-sm btn-warning"
                                             data-bs-toggle="modal" data-bs-target="#editDeptModal"
-                                            onclick="setEditDept(<?= $did ?>, '<?= htmlspecialchars($d['name'], ENT_QUOTES) ?>', <?= $fid ?>)">
+                                            onclick="setEditDept(<?= $did ?>, '<?= htmlspecialchars($d['name_en'], ENT_QUOTES) ?>', '<?= htmlspecialchars($d['name_th'], ENT_QUOTES) ?>', <?= $fid ?>)">
                                         <i class="fas fa-edit me-1"></i> แก้ไขภาควิชา
                                     </button>
                                     <form method="POST" class="d-inline"
-                                          onsubmit="return confirm('ยืนยันลบภาควิชา \"<?= htmlspecialchars($d['name'], ENT_QUOTES) ?>\"?\n(ต้องลบอาคารทั้งหมดภายในก่อน)')">
+                                          onsubmit="return confirm('ยืนยันลบภาควิชา &quot;<?= htmlspecialchars($d['name_th'], ENT_QUOTES) ?>&quot;?\n(ต้องลบอาคารทั้งหมดภายในก่อน)')">
                                         <input type="hidden" name="action" value="delete_dept">
                                         <input type="hidden" name="id" value="<?= $did ?>">
                                         <input type="hidden" name="faculty_id" value="<?= $fid ?>">
@@ -226,9 +230,16 @@ while ($fr = $fac_list->fetch_assoc()) $fac_dropdown[] = $fr;
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <label class="form-label fw-semibold">ชื่อคณะ</label>
-                <input type="text" name="name" class="form-control"
-                       placeholder="เช่น คณะวิศวกรรมศาสตร์" required>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">ชื่อคณะ (อังกฤษ)</label>
+                    <input type="text" name="name_en" class="form-control"
+                           placeholder="เช่น Faculty of Engineering" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">ชื่อคณะ (ไทย)</label>
+                    <input type="text" name="name_th" class="form-control"
+                           placeholder="เช่น คณะวิศวกรรมศาสตร์" required>
+                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
@@ -249,8 +260,14 @@ while ($fr = $fac_list->fetch_assoc()) $fac_dropdown[] = $fr;
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <label class="form-label fw-semibold">ชื่อคณะ</label>
-                <input type="text" name="name" id="edit_fac_name" class="form-control" required>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">ชื่อคณะ (อังกฤษ)</label>
+                    <input type="text" name="name_en" id="edit_fac_name_en" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">ชื่อคณะ (ไทย)</label>
+                    <input type="text" name="name_th" id="edit_fac_name_th" class="form-control" required>
+                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
@@ -275,9 +292,16 @@ while ($fr = $fac_list->fetch_assoc()) $fac_dropdown[] = $fr;
                     <small class="text-muted">คณะ: </small>
                     <span id="add_dept_fac_name" class="fw-semibold text-primary"></span>
                 </div>
-                <label class="form-label fw-semibold">ชื่อภาควิชา</label>
-                <input type="text" name="name" class="form-control"
-                       placeholder="เช่น ภาควิชาวิศวกรรมคอมพิวเตอร์" required>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">ชื่อภาควิชา (อังกฤษ)</label>
+                    <input type="text" name="name_en" class="form-control"
+                           placeholder="เช่น Department of Computer Engineering" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">ชื่อภาควิชา (ไทย)</label>
+                    <input type="text" name="name_th" class="form-control"
+                           placeholder="เช่น ภาควิชาวิศวกรรมคอมพิวเตอร์" required>
+                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
@@ -300,14 +324,18 @@ while ($fr = $fac_list->fetch_assoc()) $fac_dropdown[] = $fr;
             </div>
             <div class="modal-body">
                 <div class="mb-3">
-                    <label class="form-label fw-semibold">ชื่อภาควิชา</label>
-                    <input type="text" name="name" id="edit_dept_name" class="form-control" required>
+                    <label class="form-label fw-semibold">ชื่อภาควิชา (อังกฤษ)</label>
+                    <input type="text" name="name_en" id="edit_dept_name_en" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">ชื่อภาควิชา (ไทย)</label>
+                    <input type="text" name="name_th" id="edit_dept_name_th" class="form-control" required>
                 </div>
                 <div class="mb-3">
                     <label class="form-label fw-semibold">สังกัดคณะ</label>
                     <select name="faculty_id" id="edit_dept_fac_select" class="form-select" required>
                         <?php foreach ($fac_dropdown as $fd): ?>
-                        <option value="<?= $fd['id'] ?>"><?= htmlspecialchars($fd['name']) ?></option>
+                        <option value="<?= $fd['id'] ?>"><?= htmlspecialchars($fd['name_th']) ?> / <?= htmlspecialchars($fd['name_en']) ?></option>
                         <?php endforeach; ?>
                     </select>
                 </div>
@@ -321,17 +349,19 @@ while ($fr = $fac_list->fetch_assoc()) $fac_dropdown[] = $fr;
 </div>
 
 <script>
-    function setEditFaculty(id, name) {
+    function setEditFaculty(id, nameEn, nameTh) {
         document.getElementById('edit_fac_id').value = id;
-        document.getElementById('edit_fac_name').value = name;
+        document.getElementById('edit_fac_name_en').value = nameEn;
+        document.getElementById('edit_fac_name_th').value = nameTh;
     }
     function setAddDeptFaculty(facId, facName) {
         document.getElementById('add_dept_fac_id').value = facId;
         document.getElementById('add_dept_fac_name').textContent = facName;
     }
-    function setEditDept(id, name, facId) {
+    function setEditDept(id, nameEn, nameTh, facId) {
         document.getElementById('edit_dept_id').value = id;
-        document.getElementById('edit_dept_name').value = name;
+        document.getElementById('edit_dept_name_en').value = nameEn;
+        document.getElementById('edit_dept_name_th').value = nameTh;
         document.getElementById('edit_dept_fac_id').value = facId;
         document.getElementById('edit_dept_fac_select').value = facId;
     }

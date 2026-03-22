@@ -13,7 +13,7 @@ if (empty($email)) {
     exit();
 }
 
-$sql = "SELECT r.*, b.name_en as building_name_en, b.name_th as building_name_th, b.latitude, b.longitude, b.image_url as building_image_url 
+$sql = "SELECT r.*, (SELECT image_url FROM room_images WHERE room_id = r.id ORDER BY sort_order ASC LIMIT 1) as image_url, b.name_en as building_name_en, b.name_th as building_name_th, b.latitude, b.longitude, b.image_url as building_image_url 
         FROM favorites f
         JOIN users u ON f.user_id = u.id
         JOIN rooms r ON f.room_id = r.id

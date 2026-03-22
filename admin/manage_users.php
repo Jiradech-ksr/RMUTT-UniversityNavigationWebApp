@@ -77,7 +77,7 @@ $staff_query = $conn->query("SELECT * FROM users WHERE role IN ('admin', 'staff'
 
 <style>
     .table-container {
-        height: 500px;
+        max-height: 500px;
         overflow-y: auto;
         position: relative;
         border: 1px solid #dee2e6;
