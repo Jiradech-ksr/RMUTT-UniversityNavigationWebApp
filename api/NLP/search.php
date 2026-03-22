@@ -55,13 +55,11 @@ if ($intent == "navigation") {
         WHERE r.name_en LIKE ? OR r.name_th LIKE ? OR r.room_number LIKE ?
     ");
     $stmt->execute(["%$entity%", "%$entity%", "%$entity%", "%$entity%", "%$entity%"]);
+    $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } else {
-    // If ML says it's info, search the strictly assigned 'campus_info' table
-    $stmt = $pdo->prepare("SELECT * FROM campus_info WHERE title LIKE ? OR description LIKE ?");
-    $stmt->execute(["%$entity%", "%$entity%"]);
+    // The application is strictly for navigation. Off-topic info queries gracefully fail.
+    $results = [];
 }
-
-$results = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 if ($intent == "navigation") {
     $baseDir = rtrim(str_replace('\\', '/', dirname(dirname(dirname($_SERVER['SCRIPT_NAME'])))), '/');
