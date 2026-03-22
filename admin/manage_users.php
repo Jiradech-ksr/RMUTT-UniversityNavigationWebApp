@@ -14,16 +14,29 @@ if (isset($_POST['add_user'])) {
         $role = $_POST['role'];
 
         // เช็คว่ามีอีเมลนี้ในระบบหรือยัง
-        $check = $conn->prepare("SELECT id FROM users WHERE email=?");
+        $check = $conn->prepare("SELECT id, role FROM users WHERE email=?");
         $check->bind_param("s", $email);
         $check->execute();
-        if ($check->get_result()->num_rows > 0) {
-            $_SESSION['alert'] = "<div class='alert alert-warning'>อีเมลนี้มีในระบบแล้ว</div>";
+        $result = $check->get_result();
+
+        if ($result->num_rows > 0) {
+            $existing_user = $result->fetch_assoc();
+            if ($existing_user['role'] === 'student') {
+                // อัปเกรดจาก student เป็น staff ให้
+                $update = $conn->prepare("UPDATE users SET role = ?, display_name = ? WHERE email = ?");
+                $update->bind_param("sss", $role, $name, $email);
+                if ($update->execute()) {
+                    $_SESSION['alert'] = "<div class='alert alert-success'>อัปเดตสิทธิ์ผู้ใช้งานจาก App User เป็น " . strtoupper($role) . " แล้ว</div>";
+                }
+            } else {
+                $_SESSION['alert'] = "<div class='alert alert-warning'>อีเมลนี้เป็นเจ้าหน้าที่/แอดมินในระบบอยู่แล้ว</div>";
+            }
         } else {
-            $stmt = $conn->prepare("INSERT INTO users (display_name, email, role) VALUES (?, ?, ?)");
-            $stmt->bind_param("sss", $name, $email, $role);
+            $temp_google_id = "pending_" . bin2hex(random_bytes(8));
+            $stmt = $conn->prepare("INSERT INTO users (display_name, email, role, google_id) VALUES (?, ?, ?, ?)");
+            $stmt->bind_param("ssss", $name, $email, $role, $temp_google_id);
             if ($stmt->execute())
-                $_SESSION['alert'] = "<div class='alert alert-success'>เพิ่มผู้ใช้งานเรียบร้อยแล้ว</div>";
+                $_SESSION['alert'] = "<div class='alert alert-success'>เพิ่มเจ้าหน้าที่สำเร็จ</div>";
         }
     }
     header("Location: manage_users.php");
@@ -32,7 +45,7 @@ if (isset($_POST['add_user'])) {
 
 // Ban / Unban User
 if (isset($_GET['ban_id'])) {
-    if ($_SESSION['admin_role'] === 'admin') { // <-- เพิ่มเช็คสิทธิ์
+    if ($_SESSION['admin_role'] === 'admin') {
         $id = (int) $_GET['ban_id'];
         $current_status = $_GET['status'];
         $new_status = ($current_status == 'active') ? 'banned' : 'active';
@@ -99,12 +112,13 @@ $staff_query = $conn->query("SELECT * FROM users WHERE role IN ('admin', 'staff'
     </button>
 </div>
 
-<?php 
+<?php
 if (isset($_SESSION['alert'])) {
     echo $_SESSION['alert'];
     unset($_SESSION['alert']);
 }
-if (isset($alert)) echo $alert; 
+if (isset($alert))
+    echo $alert;
 ?>
 
 <ul class="nav nav-tabs" id="userTabs" role="tablist">

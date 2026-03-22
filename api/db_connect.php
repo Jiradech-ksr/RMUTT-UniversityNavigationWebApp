@@ -1,10 +1,10 @@
 <?php
 require_once '../admin/includes/env_loader.php';
 
-$servername = $_ENV['DB_HOST'];
-$username = $_ENV['DB_USER'];
-$password = $_ENV['DB_PASS'];
-$dbname = $_ENV['DB_NAME'];
+$servername = $_ENV['DB_HOST'] ?? 'localhost';
+$username = $_ENV['DB_USER'] ?? 'root';
+$password = $_ENV['DB_PASS'] ?? '';
+$dbname = $_ENV['DB_NAME'] ?? 'rmutt_navigation';
 
 $conn = new mysqli($servername, $username, $password, $dbname);
 

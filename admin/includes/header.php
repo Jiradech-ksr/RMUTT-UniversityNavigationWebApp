@@ -32,6 +32,9 @@ $current_page = basename($_SERVER['PHP_SELF']);
                 <li class="<?= ($current_page == 'index.php') ? 'active' : ''; ?>">
                     <a href="index.php"><i class="fas fa-home"></i>ภาพรวมระบบ</a>
                 </li>
+                <li class="<?= ($current_page == 'manage_faculties.php') ? 'active' : ''; ?>">
+                    <a href="manage_faculties.php"><i class="fas fa-university"></i> จัดการคณะ/ภาควิชา</a>
+                </li>
                 <li class="<?= ($current_page == 'manage_rooms.php') ? 'active' : ''; ?>">
                     <a href="manage_rooms.php"><i class="fas fa-building"></i> จัดการอาคาร/ห้อง</a>
                 </li>
@@ -41,10 +44,13 @@ $current_page = basename($_SERVER['PHP_SELF']);
                 <li class="<?= ($current_page == 'reports.php') ? 'active' : ''; ?>">
                     <a href="reports.php"><i class="fas fa-exclamation-triangle"></i> ข้อเสนอแนะ/รายงาน</a>
                 </li>
+                <li class="<?= ($current_page == 'stats_report.php') ? 'active' : ''; ?>">
+                    <a href="stats_report.php"><i class="fas fa-chart-bar"></i> สถิติการใช้งาน</a>
+                </li>
             </ul>
         </nav>
         <div id="content" class="w-100 bg-light">
-            <nav class="navbar navbar-expand-lg navbar-light top-navbar px-4 py-3 mb-4">
+            <nav class="navbar navbar-expand-lg navbar-light top-navbar px-4 py-3 mb-3">
                 <div class="container-fluid">
                     <span class="navbar-brand mb-0 h1 fw-bold text-indigo">RMUTT Navigator System</span>
                     <div class="d-flex align-items-center">

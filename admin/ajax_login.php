@@ -6,7 +6,7 @@ if (isset($_POST['credential'])) {
     // แกะรหัส JWT Token ที่ได้จาก Google
     $jwt = $_POST['credential'];
     $tokenParts = explode(".", $jwt);
-    $tokenPayload = base64_decode($tokenParts[1]);
+    $tokenPayload = base64_decode(str_replace(['-', '_'], ['+', '/'], $tokenParts[1]));
     $jwtPayload = json_decode($tokenPayload);
 
     $email = $jwtPayload->email;
@@ -32,10 +32,15 @@ if (isset($_POST['credential'])) {
         // 2. เช็คว่ามีสิทธิ์เข้าหลังบ้านไหม (ต้องไม่ใช่ student)
         if (in_array($user['role'], ['admin', 'staff', 'technician'])) {
 
-            // อัปเดตรูปภาพโปรไฟล์ในฐานข้อมูลให้เป็นรูปล่าสุดจาก Google
+            // อัปเดตรูปภาพโปรไฟล์และ Google ID ในฐานข้อมูลให้เป็นข้อมูลล่าสุดจาก Google
+            $google_id = $jwtPayload->sub; // รหัส Google ID ของผู้ใช้
             if (!empty($google_photo)) {
-                $update_stmt = $conn->prepare("UPDATE users SET photo_url = ? WHERE id = ?");
-                $update_stmt->bind_param("si", $google_photo, $user['id']);
+                $update_stmt = $conn->prepare("UPDATE users SET photo_url = ?, google_id = ? WHERE id = ?");
+                $update_stmt->bind_param("ssi", $google_photo, $google_id, $user['id']);
+                $update_stmt->execute();
+            } else {
+                $update_stmt = $conn->prepare("UPDATE users SET google_id = ? WHERE id = ?");
+                $update_stmt->bind_param("si", $google_id, $user['id']);
                 $update_stmt->execute();
             }
 
