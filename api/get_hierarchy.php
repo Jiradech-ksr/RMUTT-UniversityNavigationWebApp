@@ -69,6 +69,7 @@ while ($faculty = $res_faculties->fetch_assoc()) {
                         "lng"                => $building['longitude'],
                         "image_url"          => makeFullUrl($b_img),
                         "responsible_email"  => $building['responsible_email'] ?? null,
+                        "details"            => $building['details'] ?? null,
                         "children"           => []
                     ];
 
@@ -128,6 +129,7 @@ while ($faculty = $res_faculties->fetch_assoc()) {
                 "lng"                => $building['longitude'],
                 "image_url"          => makeFullUrl($b_img),
                 "responsible_email"  => $building['responsible_email'] ?? null,
+                "details"            => $building['details'] ?? null,
                 "children"           => []
             ];
 

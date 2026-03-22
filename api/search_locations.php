@@ -2,10 +2,33 @@
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 
-require 'db_config.php';
+require 'db_connect.php';
 include 'api_config.php';
 
-$search_query = isset($_GET['q']) ? $_GET['q'] : '';
+$search_query = isset($_GET['q']) ? trim($_GET['q']) : '';
+
+// --- SILENT NLP ML INJECTION ---
+if (!empty($search_query)) {
+    // Ping the TensorFlow Python API
+    $pythonApiUrl = "http://localhost:8000/predict?q=" . urlencode($search_query);
+    
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $pythonApiUrl);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 2); // 2 second timeout ensures Flutter never hangs if ML server is offline!
+    $apiResponse = @curl_exec($ch);
+    curl_close($ch);
+
+    if ($apiResponse) {
+        $nlpData = json_decode($apiResponse, true);
+        if ($nlpData && isset($nlpData['entity'])) {
+            // Overwrite the raw user sentence with the ML-extracted database entity!
+            // e.g. "where is cpe" -> "computer engineering"
+            $search_query = $nlpData['entity'];
+        }
+    }
+}
+// -------------------------------
 
 $results = [];
 
@@ -38,7 +61,8 @@ try {
         NULL as floor_layout_url,
         name_en as building_name_en,
         name_th as building_name_th,
-        image_url as building_image_url
+        image_url as building_image_url,
+        details
     FROM buildings 
     WHERE name_en LIKE ? OR name_th LIKE ?
     
@@ -57,7 +81,8 @@ try {
         r.floor_layout_url, 
         b.name_en as building_name_en,
         b.name_th as building_name_th,
-        b.image_url as building_image_url
+        b.image_url as building_image_url,
+        r.details
     FROM rooms r
     JOIN buildings b ON r.building_id = b.id
     WHERE r.name_en LIKE ? OR r.name_th LIKE ? OR r.room_number LIKE ?

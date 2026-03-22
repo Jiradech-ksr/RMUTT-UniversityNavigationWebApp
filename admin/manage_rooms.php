@@ -47,11 +47,12 @@ if (isset($_POST['add_building'])) {
 
     $name_en = $_POST['building_name_en'];
     $name_th = $_POST['building_name_th'];
+    $details = trim($_POST['building_details'] ?? '') ?: null;
     $responsible_email = trim($_POST['responsible_email'] ?? '');
     $responsible_email = $responsible_email ?: null;
 
-    $stmt = $conn->prepare("INSERT INTO buildings (name_en, name_th, department_id, faculty_id, latitude, longitude, image_url, responsible_email) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-    $stmt->bind_param("ssiiddss", $name_en, $name_th, $department_id, $faculty_id, $lat, $lng, $image_url, $responsible_email);
+    $stmt = $conn->prepare("INSERT INTO buildings (name_en, name_th, department_id, faculty_id, latitude, longitude, image_url, responsible_email, details) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    $stmt->bind_param("ssiiddsss", $name_en, $name_th, $department_id, $faculty_id, $lat, $lng, $image_url, $responsible_email, $details);
 
     if ($stmt->execute()) {
         if ($upload_error) {
@@ -137,11 +138,12 @@ if (isset($_POST['edit_building'])) {
     }
     $lat = !empty($_POST['latitude']) ? $_POST['latitude'] : null;
     $lng = !empty($_POST['longitude']) ? $_POST['longitude'] : null;
+    $details = trim($_POST['building_details'] ?? '') ?: null;
     $responsible_email = trim($_POST['responsible_email'] ?? '');
     $responsible_email = $responsible_email ?: null;
 
-    $stmt = $conn->prepare("UPDATE buildings SET name_en=?, name_th=?, department_id=?, faculty_id=?, latitude=?, longitude=?, responsible_email=? WHERE id=?");
-    $stmt->bind_param("ssiiddsi", $name_en, $name_th, $department_id, $faculty_id, $lat, $lng, $responsible_email, $id);
+    $stmt = $conn->prepare("UPDATE buildings SET name_en=?, name_th=?, department_id=?, faculty_id=?, latitude=?, longitude=?, responsible_email=?, details=? WHERE id=?");
+    $stmt->bind_param("ssiiddssi", $name_en, $name_th, $department_id, $faculty_id, $lat, $lng, $responsible_email, $details, $id);
 
     if ($stmt->execute()) {
         // Update Building Image if a new one is uploaded
@@ -266,12 +268,21 @@ if (isset($_GET['delete_building'])) {
 // Fetch all faculties for the tree
 $faculties_tree = $conn->query("SELECT * FROM faculties ORDER BY name_en ASC"); ?>
 
+<style>
+    .accordion-button:focus, .form-control:focus { box-shadow: none !important; }
+    #searchInput:focus { border-color: #dee2e6 !important; }
+</style>
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-    <h3 class="text-dark mb-0"><i class="fas fa-sitemap text-primary me-2"></i> จัดการอาคารและห้องเรียน (ตามโครงสร้าง)
-    </h3>
-    <button class="btn btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#addBuildingModal">
-        <i class="fas fa-plus"></i> เพิ่มอาคารใหม่
-    </button>
+    <h3 class="text-dark mb-0"><i class="fas fa-sitemap text-primary me-2"></i> จัดการอาคารและห้องเรียน (ตามโครงสร้าง)</h3>
+    <div class="d-flex gap-2">
+        <div class="input-group" style="width: 320px;">
+            <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
+            <input type="text" id="searchInput" class="form-control border-start-0 ps-0" placeholder="ค้นหาคณะ, ภาควิชา, อาคาร, ห้อง...">
+        </div>
+        <button class="btn btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#addBuildingModal">
+            <i class="fas fa-plus"></i> เพิ่มอาคารใหม่
+        </button>
+    </div>
 </div>
 
 <?php
@@ -305,7 +316,7 @@ if (isset($alert))
                     </button>
                 </h2>
                 <div id="fac-c<?= $fid ?>" class="accordion-collapse collapse" data-bs-parent="#facultyAccordion">
-                    <div class="accordion-body ps-4 pt-2 pb-2 bg-white">
+                    <div class="accordion-body ps-4 pt-2 pb-2 bg-white border-start border-3 border-primary ms-3 rounded-bottom">
 
                         <?php
                         $depts = $conn->query("SELECT * FROM departments WHERE faculty_id = $fid ORDER BY name_en ASC");
@@ -333,7 +344,7 @@ if (isset($alert))
                                             </button>
                                         </h2>
                                         <div id="dept-c<?= $did ?>" class="accordion-collapse collapse">
-                                            <div class="accordion-body ps-4 pt-2 pb-1 bg-white">
+                                            <div class="accordion-body ps-4 pt-2 pb-1 bg-white border-start border-3 border-secondary ms-3 rounded-bottom">
 
                                                 <?php
                                                 $buildings = $conn->query("SELECT * FROM buildings WHERE department_id = $did ORDER BY name_en ASC");
@@ -359,7 +370,7 @@ if (isset($alert))
                                                                     </button>
                                                                 </h2>
                                                                 <div id="bldg-c<?= $b_id ?>" class="accordion-collapse collapse">
-                                                                    <div class="accordion-body bg-white">
+                                                                    <div class="accordion-body ps-4 bg-white border-start border-3 border-danger ms-3 rounded-bottom">
                                                                         <div class="d-flex justify-content-end mb-3">
                                                                             <button class="btn btn-sm btn-success me-2" data-bs-toggle="modal"
                                                                                 data-bs-target="#addRoomModal"
@@ -368,7 +379,7 @@ if (isset($alert))
                                                                             </button>
                                                                             <button class="btn btn-sm btn-warning me-2" data-bs-toggle="modal"
                                                                                 data-bs-target="#editBuildingModal"
-                                                                                onclick="editBuildingData(<?= $b_id ?>, '<?= htmlspecialchars($b['name_en'], ENT_QUOTES) ?>', '<?= htmlspecialchars($b['name_th'] ?? '', ENT_QUOTES) ?>', '<?= $b_lat ?>', '<?= $b_lng ?>', 'D_<?= $did ?>', '<?= htmlspecialchars($b['responsible_email'] ?? '', ENT_QUOTES) ?>')">
+                                                                                onclick="editBuildingData(<?= $b_id ?>, '<?= htmlspecialchars($b['name_en'], ENT_QUOTES) ?>', '<?= htmlspecialchars($b['name_th'] ?? '', ENT_QUOTES) ?>', '<?= $b_lat ?>', '<?= $b_lng ?>', 'D_<?= $did ?>', '<?= htmlspecialchars($b['responsible_email'] ?? '', ENT_QUOTES) ?>', '<?= htmlspecialchars($b['details'] ?? '', ENT_QUOTES) ?>')">
                                                                                 <i class="fas fa-edit"></i> แก้ไขพิกัด/ข้อมูล
                                                                             </button>
                                                                             <a href="?delete_building=<?= $b_id ?>"
@@ -472,7 +483,7 @@ if (isset($alert))
                                     </button>
                                 </h2>
                                 <div id="bldg-c-direct-<?= $b_id ?>" class="accordion-collapse collapse">
-                                    <div class="accordion-body bg-white">
+                                    <div class="accordion-body ps-4 bg-white border-start border-3 border-success ms-3 rounded-bottom">
                                         <div class="d-flex justify-content-end mb-3">
                                             <button class="btn btn-sm btn-success me-2" data-bs-toggle="modal"
                                                 data-bs-target="#addRoomModal"
@@ -481,7 +492,7 @@ if (isset($alert))
                                             </button>
                                             <button class="btn btn-sm btn-warning me-2" data-bs-toggle="modal"
                                                 data-bs-target="#editBuildingModal"
-                                                onclick="editBuildingData(<?= $b_id ?>, '<?= htmlspecialchars($b['name_en'], ENT_QUOTES) ?>', '<?= htmlspecialchars($b['name_th'] ?? '', ENT_QUOTES) ?>', '<?= $b_lat ?>', '<?= $b_lng ?>', 'F_<?= $fid ?>', '<?= htmlspecialchars($b['responsible_email'] ?? '', ENT_QUOTES) ?>')">
+                                                onclick="editBuildingData(<?= $b_id ?>, '<?= htmlspecialchars($b['name_en'], ENT_QUOTES) ?>', '<?= htmlspecialchars($b['name_th'] ?? '', ENT_QUOTES) ?>', '<?= $b_lat ?>', '<?= $b_lng ?>', 'F_<?= $fid ?>', '<?= htmlspecialchars($b['responsible_email'] ?? '', ENT_QUOTES) ?>', '<?= htmlspecialchars($b['details'] ?? '', ENT_QUOTES) ?>')">
                                                 <i class="fas fa-edit"></i> แก้ไขข้อมูล
                                             </button>
                                             <a href="?delete_building=<?= $b_id ?>"
@@ -540,9 +551,9 @@ if ($unassigned && $unassigned->num_rows > 0): ?>
                                 <i class="fas fa-plus"></i> เพิ่มห้อง
                             </button>
                             <button class="btn btn-sm btn-warning me-2" data-bs-toggle="modal"
-                                data-bs-target="#editBuildingModal"
-                                onclick="editBuildingData(<?= $b_id ?>, '<?= htmlspecialchars($b['name_en'], ENT_QUOTES) ?>', '<?= htmlspecialchars($b['name_th'] ?? '', ENT_QUOTES) ?>', '<?= $b_lat ?>', '<?= $b_lng ?>', '', '<?= htmlspecialchars($b['responsible_email'] ?? '', ENT_QUOTES) ?>')">
-                                <i class="fas fa-edit"></i> กำหนดสังกัด
+                                                data-bs-target="#editBuildingModal"
+                                                onclick="editBuildingData(<?= $b_id ?>, '<?= htmlspecialchars($b['name_en'], ENT_QUOTES) ?>', '<?= htmlspecialchars($b['name_th'] ?? '', ENT_QUOTES) ?>', '<?= $b_lat ?>', '<?= $b_lng ?>', '', '<?= htmlspecialchars($b['responsible_email'] ?? '', ENT_QUOTES) ?>', '<?= htmlspecialchars($b['details'] ?? '', ENT_QUOTES) ?>')">
+                                                <i class="fas fa-edit"></i> กำหนดสังกัด
                             </button>
                             <a href="?delete_building=<?= $b_id ?>" class="btn btn-sm btn-outline-danger"
                                 onclick="return confirm('ยืนยันการลบอาคารนี้?');">
@@ -611,6 +622,9 @@ if ($unassigned && $unassigned->num_rows > 0): ?>
                         <label>ชื่ออาคาร (ภาษาไทย)</label>
                         <input type="text" name="building_name_th" class="form-control"
                             placeholder="เช่น ตึกวิศวกรรมคอมพิวเตอร์">
+                        <label class="form-label fw-bold mt-2">รายละเอียด (Details)</label>
+                        <textarea name="building_details" class="form-control" rows="2"
+                            placeholder="เช่น อาคารศูนย์ฝึกปฏิบัติการ"></textarea>
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-bold">ภาควิชา / สำนัก (Department) <span
@@ -751,6 +765,9 @@ if ($unassigned && $unassigned->num_rows > 0): ?>
                             required>
                         <label class="form-label fw-bold mt-2">ชื่ออาคาร (ภาษาไทย)</label>
                         <input type="text" name="building_name_th" id="edit_building_name_th" class="form-control">
+                        <label class="form-label fw-bold mt-2">รายละเอียด (Details)</label>
+                        <textarea name="building_details" id="edit_building_details" class="form-control" rows="2"
+                            placeholder="เช่น อาคารศูนย์ฝึกปฏิบัติการ"></textarea>
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-bold">ภาควิชา / สำนัก (Department) <span
@@ -972,13 +989,14 @@ if ($unassigned && $unassigned->num_rows > 0): ?>
 
 
     // --- การโยนข้อมูลเข้า Modal แก้ไขอาคาร ---
-    function editBuildingData(id, name_en, name_th, lat, lng, dept_id, email) {
+    function editBuildingData(id, name_en, name_th, lat, lng, dept_id, email, details) {
         document.getElementById('edit_building_id').value = id;
         document.getElementById('edit_building_name_en').value = name_en;
         document.getElementById('edit_building_name_th').value = name_th;
         document.getElementById('edit_latInput').value = lat;
         document.getElementById('edit_lngInput').value = lng;
         document.getElementById('edit_building_email').value = email ?? '';
+        document.getElementById('edit_building_details').value = details ?? '';
         if (dept_id) document.getElementById('edit_department_id').value = dept_id;
 
         // อัปเดตแผนที่ตอนแก้ไขให้เลื่อนไปจุดเดิม
@@ -1044,6 +1062,62 @@ if ($unassigned && $unassigned->num_rows > 0): ?>
             }
         }
     });
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchInput');
+    if (!searchInput) return;
+
+    searchInput.addEventListener('keyup', function() {
+        const term = this.value.toLowerCase().trim();
+        const allAccordionItems = document.querySelectorAll('.accordion-item');
+
+        if (term === '') {
+            allAccordionItems.forEach(item => {
+                item.style.display = '';
+                const rows = item.querySelectorAll('.accordion-collapse > .accordion-body > table tbody tr');
+                rows.forEach(r => r.style.display = '');
+            });
+            return;
+        }
+
+        allAccordionItems.forEach(item => item.style.display = 'none');
+
+        allAccordionItems.forEach(item => {
+            let headerText = '';
+            const header = item.querySelector('.accordion-header');
+            if (header) headerText = header.textContent.toLowerCase();
+
+            const rows = item.querySelectorAll('.accordion-collapse > .accordion-body > table tbody tr');
+            let anyRowMatched = false;
+            if (rows.length > 0) {
+                rows.forEach(row => {
+                    if (row.textContent.toLowerCase().includes(term)) {
+                        row.style.display = '';
+                        anyRowMatched = true;
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+            }
+
+            if (headerText.includes(term) || anyRowMatched) {
+                item.style.display = '';
+                const collapse = item.querySelector('.accordion-collapse');
+                if (collapse) collapse.classList.add('show');
+
+                let parent = item.parentElement.closest('.accordion-item');
+                while (parent) {
+                    parent.style.display = '';
+                    const pCollapse = parent.querySelector('.accordion-collapse');
+                    if (pCollapse) pCollapse.classList.add('show');
+                    parent = parent.parentElement.closest('.accordion-item');
+                }
+            }
+        });
+    });
+});
 </script>
 
 <script src="https://maps.googleapis.com/maps/api/js?key=<?= $apiKey ?>&callback=initMap" async defer></script>

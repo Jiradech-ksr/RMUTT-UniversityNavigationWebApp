@@ -6,20 +6,20 @@ $days = isset($_GET['days']) ? $_GET['days'] : 'all';
 
 if ($days === '7') {
     $where_clause = "WHERE visited_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)";
-    $date_label = "ย้อนหลัง 7 วัน (7 Days)";
+    $date_label = "ย้อนหลัง 7 วัน";
     $sql_time = "SELECT DATE(visited_at) as raw_date, DATE_FORMAT(visited_at, '%W') as label, COUNT(*) as count FROM history $where_clause GROUP BY raw_date, label ORDER BY raw_date ASC";
 } elseif ($days === '30') {
     $where_clause = "WHERE visited_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
-    $date_label = "ย้อนหลัง 30 วัน (30 Days)";
+    $date_label = "ย้อนหลัง 30 วัน";
     $sql_time = "SELECT DATE(visited_at) as raw_date, DATE_FORMAT(visited_at, '%d/%m') as label, COUNT(*) as count FROM history $where_clause GROUP BY raw_date, label ORDER BY raw_date ASC";
 } elseif ($days === '365') {
     $where_clause = "WHERE visited_at >= DATE_SUB(NOW(), INTERVAL 1 YEAR)";
-    $date_label = "ย้อนหลัง 1 ปี (1 Year)";
+    $date_label = "ย้อนหลัง 1 ปี";
     $sql_time = "SELECT DATE_FORMAT(visited_at, '%Y-%m-01') as raw_date, DATE_FORMAT(visited_at, '%b') as label, COUNT(*) as count FROM history $where_clause GROUP BY raw_date, label ORDER BY raw_date ASC";
 } else { 
     $days = 'all';
     $where_clause = "";
-    $date_label = "ทั้งหมด (All Time)";
+    $date_label = "ทั้งหมด";
     $sql_time = "SELECT YEAR(visited_at) as raw_year, COUNT(*) as count FROM history GROUP BY raw_year ORDER BY raw_year ASC";
 }
 
@@ -183,7 +183,7 @@ $top_buildings_result = $conn->query($top_buildings_sql);
         <div class="col-12">
             <div class="card shadow-sm h-100">
                 <div class="card-header py-3 bg-white">
-                    <h6 class="m-0 fw-bold text-primary"><i class="fas fa-chart-area me-2"></i>แนวโน้มการค้นหาสถานที่ (<?= $date_label ?>)</h6>
+                    <h6 class="m-0 fw-bold text-primary"><i class="fas fa-chart-area me-2"></i>แนวโน้มการค้นหาสถานที่ <?= $date_label ?></h6>
                 </div>
                 <div class="card-body">
                     <div style="height: 350px;">
