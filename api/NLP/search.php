@@ -8,6 +8,9 @@ $entity = $userInput;
 $confidence = 0.0;
 
 // --- STEP 1: Talk to the TensorFlow Python API ---
+
+//ส่งคำค้นหาของผู้ใช้ (?query=...) ไปยัง Python NLP API ผ่านทาง cURL 
+//และวิเคราะห์การตอบกลับเพื่อแยกเจตนา(intent) เอนทิตี(entity) และระดับความมั่นใจ(confidence)
 if (!empty($userInput)) {
     $pythonApiUrl = "http://localhost:8000/predict?q=" . urlencode($userInput);
     $ch = curl_init();
@@ -35,6 +38,9 @@ $pass = "";
 $pdo = new PDO("mysql:host=$host;dbname=$db", $user, $pass);
 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
+//หากจุดประสงค์คือ "การนำทาง" ระบบจะใช้เอนทิตีที่แยกออกมาเพื่อค้นหาในฐานข้อมูล 
+//universitynavigation_db ครอบคลุมอาคารและห้องต่างๆ โดยคำนึงถึง name_th และ name_en ด้วย 
+//แต่ถ้าไม่ใช่ "การนำทาง" ระบบจะละทิ้งการค้นหานั้น
 if ($intent == "navigation") {
     // Search buildings and rooms natively using our specific structure
     $stmt = $pdo->prepare("
@@ -57,15 +63,18 @@ if ($intent == "navigation") {
     $stmt->execute(["%$entity%", "%$entity%", "%$entity%", "%$entity%", "%$entity%"]);
     $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } else {
-    // The application is strictly for navigation. Off-topic info queries gracefully fail.
+    // The application is strictly for navigation.
     $results = [];
 }
 
 if ($intent == "navigation") {
     $baseDir = rtrim(str_replace('\\', '/', dirname(dirname(dirname($_SERVER['SCRIPT_NAME'])))), '/');
-    function makeFullUrl($path, $baseDir) {
-        if (empty($path)) return null;
-        if (strpos($path, 'http') === 0) return $path;
+    function makeFullUrl($path, $baseDir)
+    {
+        if (empty($path))
+            return null;
+        if (strpos($path, 'http') === 0)
+            return $path;
         $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https://" : "http://";
         return $protocol . $_SERVER['HTTP_HOST'] . $baseDir . '/' . ltrim($path, '/');
     }

@@ -32,11 +32,8 @@ $current_page = basename($_SERVER['PHP_SELF']);
                 <li class="<?= ($current_page == 'index.php') ? 'active' : ''; ?>">
                     <a href="index.php"><i class="fas fa-home"></i>ภาพรวมระบบ</a>
                 </li>
-                <li class="<?= ($current_page == 'manage_faculties.php') ? 'active' : ''; ?>">
-                    <a href="manage_faculties.php"><i class="fas fa-university"></i> จัดการคณะ/ภาควิชา</a>
-                </li>
                 <li class="<?= ($current_page == 'manage_rooms.php') ? 'active' : ''; ?>">
-                    <a href="manage_rooms.php"><i class="fas fa-building"></i> จัดการอาคาร/ห้อง</a>
+                    <a href="manage_rooms.php"><i class="fas fa-map-marked-alt"></i> จัดการสถานที่</a>
                 </li>
                 <li class="<?= ($current_page == 'manage_users.php') ? 'active' : ''; ?>">
                     <a href="manage_users.php"><i class="fas fa-user-graduate"></i> จัดการบัญชีผู้ใช้งาน</a>

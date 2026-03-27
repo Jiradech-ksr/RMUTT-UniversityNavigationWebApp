@@ -227,9 +227,9 @@ $recent_reports = $conn->query($recent_reports_sql);
                                 <div
                                     class="d-flex align-items-center p-3 border rounded shadow-sm bg-light text-dark user-select-none card-stat h-100">
                                     <div class="bg-primary text-white rounded-circle p-3 me-3"><i
-                                            class="fas fa-door-open fa-lg"></i></div>
+                                            class="fas fa-map-marked-alt fa-lg"></i></div>
                                     <div>
-                                        <h6 class="mb-0 fw-bold">จัดการอาคารและห้อง</h6>
+                                        <h6 class="mb-0 fw-bold">จัดการสถานที่</h6>
                                         <small class="text-muted">อัปเดตข้อมูลสถานที่</small>
                                     </div>
                                 </div>

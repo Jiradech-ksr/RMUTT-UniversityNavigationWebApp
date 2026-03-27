@@ -8,10 +8,15 @@ include 'api_config.php';
 $search_query = isset($_GET['q']) ? trim($_GET['q']) : '';
 
 // --- SILENT NLP ML INJECTION ---
+
+//แทรกตรรกะ NLP ก่อนการค้นหาในฐานข้อมูล โดยจะส่งคำค้นหาไปยัง API ของ Python หากพบเอนทิตีที่ต้องการ 
+// ะบบจะแทนที่สตริงคำค้นหาดิบของผู้ใช้ด้วยเอนทิตีที่สกัดได้จาก ML 
+// เพื่อปรับปรุงการจับคู่ในฐานข้อมูล (เช่น เปลี่ยน "Where is CPE" เป็น "Computer Engineering")    
+
 if (!empty($search_query)) {
     // Ping the TensorFlow Python API
     $pythonApiUrl = "http://localhost:8000/predict?q=" . urlencode($search_query);
-    
+
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, $pythonApiUrl);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -23,7 +28,6 @@ if (!empty($search_query)) {
         $nlpData = json_decode($apiResponse, true);
         if ($nlpData && isset($nlpData['entity'])) {
             // Overwrite the raw user sentence with the ML-extracted database entity!
-            // e.g. "where is cpe" -> "computer engineering"
             $search_query = $nlpData['entity'];
         }
     }
@@ -36,10 +40,12 @@ try {
     $search_term = '%' . $search_query . '%';
 
     $baseDir = rtrim(str_replace('\\', '/', dirname(dirname($_SERVER['SCRIPT_NAME']))), '/');
-    
+
     // Function to ensure URL is full
-    function makeFullUrl($path, $baseDir) {
-        if (empty($path)) return null;
+    function makeFullUrl($path, $baseDir)
+    {
+        if (empty($path))
+            return null;
         if (strpos($path, 'http://') === 0 || strpos($path, 'https://') === 0) {
             return $path;
         }

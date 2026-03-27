@@ -3,7 +3,81 @@ include 'includes/header.php';
 require_once '../api/upload_helper.php';
 $apiKey = $_ENV['GOOGLE_MAPS_API_KEY'];
 // ==========================================
-// 1. จัดการเพิ่มข้อมูล (Add Data)
+// 1. จัดการคณะและภาควิชา (Faculties & Depts)
+// ==========================================
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $action = $_POST['action'] ?? '';
+    // --- FACULTY ---
+    if ($action === 'add_faculty') {
+        $name_en = trim($_POST['name_en'] ?? '');
+        $name_th = trim($_POST['name_th'] ?? '');
+        if ($name_en && $name_th) {
+            $stmt = $conn->prepare("INSERT INTO faculties (name_en, name_th) VALUES (?, ?)");
+            $stmt->bind_param("ss", $name_en, $name_th);
+            $stmt->execute();
+        }
+        $_SESSION['alert'] = "<div class='alert alert-success'><i class='fas fa-check-circle'></i> เพิ่มคณะเรียบร้อยแล้ว</div>";
+        header("Location: manage_rooms.php"); exit();
+    } elseif ($action === 'edit_faculty') {
+        $id   = (int)$_POST['id'];
+        $name_en = trim($_POST['name_en'] ?? '');
+        $name_th = trim($_POST['name_th'] ?? '');
+        $stmt = $conn->prepare("UPDATE faculties SET name_en = ?, name_th = ? WHERE id = ?");
+        $stmt->bind_param("ssi", $name_en, $name_th, $id);
+        $stmt->execute();
+        $_SESSION['alert'] = "<div class='alert alert-success'><i class='fas fa-check-circle'></i> แก้ไขคณะเรียบร้อยแล้ว</div>";
+        header("Location: manage_rooms.php"); exit();
+    } elseif ($action === 'delete_faculty') {
+        $id = (int)$_POST['id'];
+        $check = $conn->query("SELECT COUNT(*) as cnt FROM departments WHERE faculty_id = $id")->fetch_assoc()['cnt'];
+        if ($check > 0) {
+            $_SESSION['alert'] = "<div class='alert alert-danger'>ไม่สามารถลบคณะได้ เนื่องจากยังมีภาควิชาอยู่ภายใน</div>";
+        } else {
+            $stmt = $conn->prepare("DELETE FROM faculties WHERE id = ?");
+            $stmt->bind_param("i", $id);
+            $stmt->execute();
+            $_SESSION['alert'] = "<div class='alert alert-success'><i class='fas fa-check-circle'></i> ลบคณะเรียบร้อยแล้ว</div>";
+        }
+        header("Location: manage_rooms.php"); exit();
+    // --- DEPARTMENT ---
+    } elseif ($action === 'add_dept') {
+        $faculty_id = (int)($_POST['faculty_id'] ?? 0);
+        $name_en    = trim($_POST['name_en'] ?? '');
+        $name_th    = trim($_POST['name_th'] ?? '');
+        if ($name_en && $name_th && $faculty_id) {
+            $stmt = $conn->prepare("INSERT INTO departments (name_en, name_th, faculty_id) VALUES (?, ?, ?)");
+            $stmt->bind_param("ssi", $name_en, $name_th, $faculty_id);
+            $stmt->execute();
+        }
+        $_SESSION['alert'] = "<div class='alert alert-success'><i class='fas fa-check-circle'></i> เพิ่มภาควิชาเรียบร้อยแล้ว</div>";
+        header("Location: manage_rooms.php"); exit();
+    } elseif ($action === 'edit_dept') {
+        $id         = (int)$_POST['id'];
+        $faculty_id = (int)$_POST['faculty_id'];
+        $name_en    = trim($_POST['name_en'] ?? '');
+        $name_th    = trim($_POST['name_th'] ?? '');
+        $stmt = $conn->prepare("UPDATE departments SET name_en = ?, name_th = ?, faculty_id = ? WHERE id = ?");
+        $stmt->bind_param("ssii", $name_en, $name_th, $faculty_id, $id);
+        $stmt->execute();
+        $_SESSION['alert'] = "<div class='alert alert-success'><i class='fas fa-check-circle'></i> แก้ไขภาควิชาเรียบร้อยแล้ว</div>";
+        header("Location: manage_rooms.php"); exit();
+    } elseif ($action === 'delete_dept') {
+        $id         = (int)$_POST['id'];
+        $check = $conn->query("SELECT COUNT(*) as cnt FROM buildings WHERE department_id = $id")->fetch_assoc()['cnt'];
+        if ($check > 0) {
+            $_SESSION['alert'] = "<div class='alert alert-danger'>ไม่สามารถลบภาควิชาได้ เนื่องจากยังมีอาคารอยู่ภายใน</div>";
+        } else {
+            $stmt = $conn->prepare("DELETE FROM departments WHERE id = ?");
+            $stmt->bind_param("i", $id);
+            $stmt->execute();
+            $_SESSION['alert'] = "<div class='alert alert-success'><i class='fas fa-check-circle'></i> ลบภาควิชาเรียบร้อยแล้ว</div>";
+        }
+        header("Location: manage_rooms.php"); exit();
+    }
+}
+
+// ==========================================
+// 2. จัดการข้อมูลอาคาร/ห้อง (Add Buildings / Rooms)
 // ==========================================
 $dept_query = $conn->query("
     SELECT d.id, d.name_en as dept_name_en, d.name_th as dept_name_th, f.name_en as faculty_name_en, f.name_th as faculty_name_th
@@ -265,20 +339,22 @@ if (isset($_GET['delete_building'])) {
     }
 }
 
-// Fetch all faculties for the tree
-$faculties_tree = $conn->query("SELECT * FROM faculties ORDER BY name_en ASC"); ?>
+// All faculties fetched into $faculties_list previously ?>
 
 <style>
     .accordion-button:focus, .form-control:focus { box-shadow: none !important; }
     #searchInput:focus { border-color: #dee2e6 !important; }
 </style>
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-    <h3 class="text-dark mb-0"><i class="fas fa-sitemap text-primary me-2"></i> จัดการอาคารและห้องเรียน (ตามโครงสร้าง)</h3>
+    <h3 class="text-dark mb-0"><i class="fas fa-map-marked-alt text-primary me-2"></i> จัดการสถานที่ (คณะ, อาคาร, ห้อง)</h3>
     <div class="d-flex gap-2">
         <div class="input-group" style="width: 320px;">
             <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
             <input type="text" id="searchInput" class="form-control border-start-0 ps-0" placeholder="ค้นหาคณะ, ภาควิชา, อาคาร, ห้อง...">
         </div>
+        <button class="btn btn-success shadow-sm" data-bs-toggle="modal" data-bs-target="#addFacultyModal">
+            <i class="fas fa-plus"></i> เพิ่มคณะใหม่
+        </button>
         <button class="btn btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#addBuildingModal">
             <i class="fas fa-plus"></i> เพิ่มอาคารใหม่
         </button>
@@ -296,8 +372,8 @@ if (isset($alert))
 
 <!-- TREE VIEW: Faculty > Department > Building > Room (old accordion style) -->
 <div class="accordion shadow-sm" id="facultyAccordion">
-    <?php if ($faculties_tree && $faculties_tree->num_rows > 0):
-        while ($faculty = $faculties_tree->fetch_assoc()):
+    <?php if (!empty($faculties_list)):
+        foreach ($faculties_list as $faculty):
             $fid = (int) $faculty['id'];
             $faculty_name_safe = htmlspecialchars($faculty['name_th'] . ' / ' . $faculty['name_en']);
             $total_bldg = $conn->query("
@@ -317,14 +393,34 @@ if (isset($alert))
                 </h2>
                 <div id="fac-c<?= $fid ?>" class="accordion-collapse collapse" data-bs-parent="#facultyAccordion">
                     <div class="accordion-body ps-4 pt-2 pb-2 bg-white border-start border-3 border-primary ms-3 rounded-bottom">
-
+                        <div class="d-flex gap-2 mb-3 mt-2">
+                            <button class="btn btn-sm btn-success"
+                                    data-bs-toggle="modal" data-bs-target="#addDeptModal"
+                                    onclick="setAddDeptFaculty(<?= $fid ?>, '<?= htmlspecialchars($faculty['name_th'], ENT_QUOTES) ?>')">
+                                <i class="fas fa-plus me-1"></i> เพิ่มภาควิชา
+                            </button>
+                            <button class="btn btn-sm btn-warning"
+                                    data-bs-toggle="modal" data-bs-target="#editFacultyModal"
+                                    onclick="setEditFaculty(<?= $fid ?>, '<?= htmlspecialchars($faculty['name_en'], ENT_QUOTES) ?>', '<?= htmlspecialchars($faculty['name_th'], ENT_QUOTES) ?>')">
+                                <i class="fas fa-edit me-1"></i> แก้ไขคณะ
+                            </button>
+                            <form method="POST" class="d-inline"
+                                  onsubmit="return confirm('ยืนยันลบคณะ <?= $faculty_name_safe ?>?')">
+                                <input type="hidden" name="action" value="delete_faculty">
+                                <input type="hidden" name="id" value="<?= $fid ?>">
+                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                    <i class="fas fa-trash me-1"></i> ลบคณะ
+                                </button>
+                            </form>
+                        </div>
                         <?php
                         $depts = $conn->query("SELECT * FROM departments WHERE faculty_id = $fid ORDER BY name_en ASC");
                         if ($depts && $depts->num_rows > 0):
                             while ($dept = $depts->fetch_assoc()):
                                 $did = (int) $dept['id'];
                                 $dept_name_safe = htmlspecialchars($dept['name_th'] . ' / ' . $dept['name_en']);
-                                $dept_bldgs_count = $conn->query("SELECT COUNT(*) as cnt FROM buildings WHERE department_id = $did")->fetch_assoc()['cnt'];
+                                $buildings = $conn->query("SELECT * FROM buildings WHERE department_id = $did ORDER BY name_en ASC");
+                                $dept_bldgs_count = $buildings ? $buildings->num_rows : 0;
                                 ?>
                                 <!-- LEVEL 2: DEPARTMENT -->
                                 <div class="accordion mb-1" id="dept-ac<?= $did ?>">
@@ -345,9 +441,24 @@ if (isset($alert))
                                         </h2>
                                         <div id="dept-c<?= $did ?>" class="accordion-collapse collapse">
                                             <div class="accordion-body ps-4 pt-2 pb-1 bg-white border-start border-3 border-secondary ms-3 rounded-bottom">
-
+                                                <div class="d-flex gap-2 mb-3 mt-2">
+                                                    <button class="btn btn-sm btn-warning"
+                                                            data-bs-toggle="modal" data-bs-target="#editDeptModal"
+                                                            onclick="setEditDept(<?= $did ?>, '<?= htmlspecialchars($dept['name_en'], ENT_QUOTES) ?>', '<?= htmlspecialchars($dept['name_th'], ENT_QUOTES) ?>', <?= $fid ?>)">
+                                                        <i class="fas fa-edit me-1"></i> แก้ไขภาควิชา
+                                                    </button>
+                                                    <form method="POST" class="d-inline"
+                                                          onsubmit="return confirm('ยืนยันลบภาควิชา?')">
+                                                        <input type="hidden" name="action" value="delete_dept">
+                                                        <input type="hidden" name="id" value="<?= $did ?>">
+                                                        <input type="hidden" name="faculty_id" value="<?= $fid ?>">
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                            <i class="fas fa-trash me-1"></i> ลบภาควิชา
+                                                        </button>
+                                                    </form>
+                                                </div>
                                                 <?php
-                                                $buildings = $conn->query("SELECT * FROM buildings WHERE department_id = $did ORDER BY name_en ASC");
+                                                // Using $buildings queried above
                                                 if ($buildings && $buildings->num_rows > 0):
                                                     while ($b = $buildings->fetch_assoc()):
                                                         $b_id = (int) $b['id'];
@@ -512,7 +623,7 @@ if (isset($alert))
             </div>
             <!-- /LEVEL 1: FACULTY -->
 
-        <?php endwhile; else: ?>
+        <?php endforeach; else: ?>
         <div class="alert alert-warning shadow-sm"><i class="fas fa-exclamation-triangle me-2"></i> ยังไม่มีข้อมูลคณะในระบบ
         </div>
     <?php endif; ?>
@@ -895,7 +1006,149 @@ if ($unassigned && $unassigned->num_rows > 0): ?>
     </div>
 </div>
 
+<!-- ==================== NEW MODALS (Faculty & Dept) ==================== -->
+<!-- Add Faculty Modal -->
+<div class="modal fade" id="addFacultyModal" tabindex="-1">
+    <div class="modal-dialog">
+        <form method="POST" class="modal-content">
+            <input type="hidden" name="action" value="add_faculty">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title"><i class="fas fa-university me-2"></i>เพิ่มคณะใหม่</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">ชื่อคณะ (อังกฤษ)</label>
+                    <input type="text" name="name_en" class="form-control" placeholder="เช่น Faculty of Engineering" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">ชื่อคณะ (ไทย)</label>
+                    <input type="text" name="name_th" class="form-control" placeholder="เช่น คณะวิศวกรรมศาสตร์" required>
+                </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                <button type="submit" class="btn btn-success">บันทึก</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Faculty Modal -->
+<div class="modal fade" id="editFacultyModal" tabindex="-1">
+    <div class="modal-dialog">
+        <form method="POST" class="modal-content">
+            <input type="hidden" name="action" value="edit_faculty">
+            <input type="hidden" name="id" id="edit_fac_id">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title"><i class="fas fa-edit me-2"></i>แก้ไขคณะ</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">ชื่อคณะ (อังกฤษ)</label>
+                    <input type="text" name="name_en" id="edit_fac_name_en" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">ชื่อคณะ (ไทย)</label>
+                    <input type="text" name="name_th" id="edit_fac_name_th" class="form-control" required>
+                </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                <button type="submit" class="btn btn-warning">บันทึกการแก้ไข</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Add Department Modal -->
+<div class="modal fade" id="addDeptModal" tabindex="-1">
+    <div class="modal-dialog">
+        <form method="POST" class="modal-content">
+            <input type="hidden" name="action" value="add_dept">
+            <input type="hidden" name="faculty_id" id="add_dept_fac_id">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title"><i class="fas fa-sitemap me-2"></i>เพิ่มภาควิชา</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-2 p-2 bg-light rounded">
+                    <small class="text-muted">คณะ: </small>
+                    <span id="add_dept_fac_name" class="fw-semibold text-primary"></span>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">ชื่อภาควิชา (อังกฤษ)</label>
+                    <input type="text" name="name_en" class="form-control" placeholder="เช่น Department of Computer Engineering" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">ชื่อภาควิชา (ไทย)</label>
+                    <input type="text" name="name_th" class="form-control" placeholder="เช่น ภาควิชาวิศวกรรมคอมพิวเตอร์" required>
+                </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                <button type="submit" class="btn btn-success">บันทึก</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Department Modal -->
+<div class="modal fade" id="editDeptModal" tabindex="-1">
+    <div class="modal-dialog">
+        <form method="POST" class="modal-content">
+            <input type="hidden" name="action" value="edit_dept">
+            <input type="hidden" name="id" id="edit_dept_id">
+            <input type="hidden" name="faculty_id" id="edit_dept_fac_id">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title"><i class="fas fa-edit me-2"></i>แก้ไขภาควิชา</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">ชื่อภาควิชา (อังกฤษ)</label>
+                    <input type="text" name="name_en" id="edit_dept_name_en" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">ชื่อภาควิชา (ไทย)</label>
+                    <input type="text" name="name_th" id="edit_dept_name_th" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">สังกัดคณะ</label>
+                    <select name="faculty_id" id="edit_dept_fac_select" class="form-select" required>
+                        <?php foreach ($faculties_list as $fd): ?>
+                        <option value="<?= $fd['id'] ?>"><?= htmlspecialchars($fd['name_th']) ?> / <?= htmlspecialchars($fd['name_en']) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                <button type="submit" class="btn btn-warning">บันทึกการแก้ไข</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
+    function setEditFaculty(id, nameEn, nameTh) {
+        document.getElementById('edit_fac_id').value = id;
+        document.getElementById('edit_fac_name_en').value = nameEn;
+        document.getElementById('edit_fac_name_th').value = nameTh;
+    }
+    function setAddDeptFaculty(facId, facName) {
+        document.getElementById('add_dept_fac_id').value = facId;
+        document.getElementById('add_dept_fac_name').textContent = facName;
+    }
+    function setEditDept(id, nameEn, nameTh, facId) {
+        document.getElementById('edit_dept_id').value = id;
+        document.getElementById('edit_dept_name_en').value = nameEn;
+        document.getElementById('edit_dept_name_th').value = nameTh;
+        document.getElementById('edit_dept_fac_id').value = facId;
+        document.getElementById('edit_dept_fac_select').value = facId;
+    }
+
     // --- Pre-select department in Add Building modal ---
     function preSelectDept(deptId) {
         var sel = document.querySelector('#addBuildingModal select[name="department_id"]');
