@@ -68,7 +68,7 @@ $reports = $conn->query($sql);
                                         <?= htmlspecialchars($rp['issue_type']); ?>
                                     </span></td>
                                 <td>
-                                    <?= htmlspecialchars($rp['description']); ?>
+                                    <div style="max-height: 100px; max-width: 300px; overflow-y: auto; white-space: pre-wrap; word-break: break-word;" class="pe-2"><?= htmlspecialchars($rp['description']); ?></div>
                                 </td>
                                 <td>
                                     <?php if (!empty($rp['image_url'])):

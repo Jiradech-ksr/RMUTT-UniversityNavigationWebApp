@@ -28,17 +28,17 @@ SET time_zone = "+00:00";
 --
 
 CREATE TABLE `buildings` (
-  `id` int(11) NOT NULL,
-  `name_en` varchar(255) DEFAULT NULL,
-  `name_th` varchar(255) DEFAULT NULL,
-  `department_id` int(11) DEFAULT NULL,
-  `faculty_id` int(11) DEFAULT NULL,
-  `latitude` decimal(10,8) NOT NULL,
-  `longitude` decimal(11,8) NOT NULL,
-  `description` text DEFAULT NULL,
-  `image_url` varchar(255) DEFAULT NULL,
-  `responsible_email` varchar(255) DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+  `id` int(11) NOT NULL COMMENT 'รหัสอาคาร',
+  `name_en` varchar(255) DEFAULT NULL COMMENT 'ชื่ออาคาร (ภาษาอังกฤษ)',
+  `name_th` varchar(255) DEFAULT NULL COMMENT 'ชื่ออาคาร (ภาษาไทย)',
+  `department_id` int(11) DEFAULT NULL COMMENT 'รหัสภาควิชา',
+  `faculty_id` int(11) DEFAULT NULL COMMENT 'รหัสคณะ',
+  `latitude` decimal(10,8) NOT NULL COMMENT 'ละติจูดพิกัดอาคาร',
+  `longitude` decimal(11,8) NOT NULL COMMENT 'ลองจิจูดพิกัดอาคาร',
+  `description` text DEFAULT NULL COMMENT 'รายละเอียดอาคาร',
+  `image_url` varchar(255) DEFAULT NULL COMMENT 'ที่อยู่รูปภาพอาคาร',
+  `responsible_email` varchar(255) DEFAULT NULL COMMENT 'อีเมลผู้รับผิดชอบดูแลอาคาร',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp() COMMENT 'วันเวลาที่บันทึกข้อมูล'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -68,11 +68,11 @@ INSERT INTO `buildings` (`id`, `name_en`, `name_th`, `department_id`, `faculty_i
 --
 
 CREATE TABLE `departments` (
-  `id` int(11) NOT NULL,
-  `name_en` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `name_th` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `faculty_id` int(11) DEFAULT NULL
+  `id` int(11) NOT NULL COMMENT 'รหัสภาควิชา',
+  `name_en` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'ชื่อภาควิชา (ภาษาอังกฤษ)',
+  `name_th` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'ชื่อภาควิชา (ภาษาไทย)',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp() COMMENT 'วันเวลาที่บันทึกข้อมูล',
+  `faculty_id` int(11) DEFAULT NULL COMMENT 'รหัสคณะที่สังกัด'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -99,10 +99,10 @@ INSERT INTO `departments` (`id`, `name_en`, `name_th`, `created_at`, `faculty_id
 --
 
 CREATE TABLE `faculties` (
-  `id` int(11) NOT NULL,
-  `name_en` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `name_th` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+  `id` int(11) NOT NULL COMMENT 'รหัสคณะ',
+  `name_en` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'ชื่อคณะ (ภาษาอังกฤษ)',
+  `name_th` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'ชื่อคณะ (ภาษาไทย)',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp() COMMENT 'วันเวลาที่บันทึกข้อมูล'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -131,10 +131,10 @@ INSERT INTO `faculties` (`id`, `name_en`, `name_th`, `created_at`) VALUES
 --
 
 CREATE TABLE `favorites` (
-  `id` int(11) NOT NULL,
-  `user_id` int(11) NOT NULL,
-  `room_id` int(11) NOT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+  `id` int(11) NOT NULL COMMENT 'รหัสบันทึก',
+  `user_id` int(11) NOT NULL COMMENT 'รหัสผู้ใช้งาน',
+  `room_id` int(11) NOT NULL COMMENT 'รหัสห้องหรือสถานที่',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp() COMMENT 'วันเวลาที่กดถูกใจ'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -155,11 +155,11 @@ INSERT INTO `favorites` (`id`, `user_id`, `room_id`, `created_at`) VALUES
 --
 
 CREATE TABLE `history` (
-  `id` int(11) NOT NULL,
-  `user_id` int(11) NOT NULL,
-  `location_id` int(11) NOT NULL,
-  `location_type` varchar(50) NOT NULL DEFAULT 'Room',
-  `visited_at` timestamp NOT NULL DEFAULT current_timestamp()
+  `id` int(11) NOT NULL COMMENT 'รหัสประวัติการค้นหา',
+  `user_id` int(11) NOT NULL COMMENT 'รหัสผู้ใช้งาน',
+  `location_id` int(11) NOT NULL COMMENT 'รหัสสถานที่ที่เข้าชม',
+  `location_type` varchar(50) NOT NULL DEFAULT 'Room' COMMENT 'ประเภทสถานที่ (Room หรือ Building)',
+  `visited_at` timestamp NOT NULL DEFAULT current_timestamp() COMMENT 'วันเวลาที่เข้าชมสถานที่'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -201,15 +201,15 @@ INSERT INTO `history` (`id`, `user_id`, `location_id`, `location_type`, `visited
 --
 
 CREATE TABLE `reports` (
-  `id` int(11) NOT NULL,
-  `user_id` int(11) NOT NULL,
-  `room_id` int(11) DEFAULT NULL,
-  `issue_type` varchar(50) NOT NULL,
-  `description` text DEFAULT NULL,
-  `image_url` varchar(255) DEFAULT NULL,
-  `status` enum('pending','in_progress','resolved') DEFAULT 'pending',
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `resolved_at` datetime DEFAULT NULL
+  `id` int(11) NOT NULL COMMENT 'รหัสแจ้งปัญหา',
+  `user_id` int(11) NOT NULL COMMENT 'รหัสผู้แจ้งปัญหา',
+  `room_id` int(11) DEFAULT NULL COMMENT 'รหัสสถานที่เกิดปัญหา',
+  `issue_type` varchar(50) NOT NULL COMMENT 'ประเภทปัญหา',
+  `description` text DEFAULT NULL COMMENT 'รายละเอียดปัญหา',
+  `image_url` varchar(255) DEFAULT NULL COMMENT 'ที่อยู่รูปภาพประกอบ',
+  `status` enum('pending','in_progress','resolved') DEFAULT 'pending' COMMENT 'สถานะการแก้ไข (pending, in_progress, resolved)',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp() COMMENT 'วันเวลาที่แจ้ง',
+  `resolved_at` datetime DEFAULT NULL COMMENT 'วันเวลาที่แก้ไขเสร็จ'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -228,17 +228,17 @@ INSERT INTO `reports` (`id`, `user_id`, `room_id`, `issue_type`, `description`, 
 --
 
 CREATE TABLE `rooms` (
-  `id` int(11) NOT NULL,
-  `building_id` int(11) NOT NULL,
-  `name_en` varchar(255) DEFAULT NULL,
-  `name_th` varchar(255) DEFAULT NULL,
-  `room_number` varchar(50) DEFAULT NULL,
-  `floor` int(11) DEFAULT NULL,
-  `details` text DEFAULT NULL,
-  `usage_type` enum('Classroom','Office','Lab','Meeting Room','Other') DEFAULT NULL,
-  `floor_layout_url` varchar(255) DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `image_url` text DEFAULT NULL
+  `id` int(11) NOT NULL COMMENT 'รหัสห้อง',
+  `building_id` int(11) NOT NULL COMMENT 'รหัสอาคารที่ต้้ง',
+  `name_en` varchar(255) DEFAULT NULL COMMENT 'ชื่อห้อง (อังกฤษ)',
+  `name_th` varchar(255) DEFAULT NULL COMMENT 'ชื่อห้อง (ไทย)',
+  `room_number` varchar(50) DEFAULT NULL COMMENT 'หมายเลขห้อง',
+  `floor` int(11) DEFAULT NULL COMMENT 'ชั้นที่ตั้ง',
+  `details` text DEFAULT NULL COMMENT 'รายละเอียดเพิ่มเติม',
+  `usage_type` enum('Classroom','Office','Lab','Meeting Room','Other') DEFAULT NULL COMMENT 'ประเภทการใช้งานห้อง',
+  `floor_layout_url` varchar(255) DEFAULT NULL COMMENT 'แผนผังชั้นที่ต้้ง',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp() COMMENT 'วันที่สร้างข้อมูล',
+  `image_url` text DEFAULT NULL COMMENT 'รูปภาพหน้าห้อง'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -264,11 +264,11 @@ INSERT INTO `rooms` (`id`, `building_id`, `name_en`, `name_th`, `room_number`, `
 --
 
 CREATE TABLE `room_images` (
-  `id` int(10) UNSIGNED NOT NULL,
-  `room_id` int(11) NOT NULL,
-  `image_url` varchar(500) NOT NULL,
-  `sort_order` tinyint(3) UNSIGNED NOT NULL DEFAULT 0,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+  `id` int(10) UNSIGNED NOT NULL COMMENT 'รหัสรูปภาพห้อง',
+  `room_id` int(11) NOT NULL COMMENT 'รหัสห้อง',
+  `image_url` varchar(500) NOT NULL COMMENT 'ที่อยู่ไฟล์รูป',
+  `sort_order` tinyint(3) UNSIGNED NOT NULL DEFAULT 0 COMMENT 'ลำดับการแสดงผล',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp() COMMENT 'วันที่อัปโหลดรูป'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -278,14 +278,14 @@ CREATE TABLE `room_images` (
 --
 
 CREATE TABLE `users` (
-  `id` int(11) NOT NULL,
-  `google_id` varchar(255) NOT NULL,
-  `email` varchar(255) NOT NULL,
-  `display_name` varchar(255) DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `photo_url` text DEFAULT NULL,
-  `role` enum('student','staff','technician','admin') DEFAULT 'student',
-  `status` enum('active','banned') DEFAULT 'active'
+  `id` int(11) NOT NULL COMMENT 'รหัสบัญชีผู้ใช้งาน',
+  `google_id` varchar(255) NOT NULL COMMENT 'รหัสผูกบัญชี Google',
+  `email` varchar(255) NOT NULL COMMENT 'อีเมลเข้าสู่ระบบ',
+  `display_name` varchar(255) DEFAULT NULL COMMENT 'ชื่อแสดงผล',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp() COMMENT 'วันเวลาที่สมัครสมาชิก',
+  `photo_url` text DEFAULT NULL COMMENT 'ลิงก์รูปโปรไฟล์',
+  `role` enum('student','staff','technician','admin') DEFAULT 'student' COMMENT 'ระดับสิทธิ์ (student, staff, admin)',
+  `status` enum('active','banned') DEFAULT 'active' COMMENT 'สถานะการใช้งาน (ปกติ, แบน)'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
